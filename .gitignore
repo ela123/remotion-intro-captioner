@@ -1,0 +1,9 @@
+node_modules/
+out/
+.env
+public/intro.mp4
+public/intro.cfr.mp4
+public/intro.proxy.mp4
+public/*.mov
+public/annotated-cues.json
+.DS_Store

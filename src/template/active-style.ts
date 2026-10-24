@@ -22,19 +22,16 @@ type EffectSettings = Pick<IntroConfig, "effects" | "motionBlur" | "drift">;
 
 const pick = (flag: AutoFlag, styleDefault: boolean): boolean => (flag === "auto" ? styleDefault : flag);
 
-const isNeon = (name: string): boolean => name === "neon" || name === "neon-techy";
-const isCinematic = (name: string): boolean => name === "cinematic" || name === "cinematic-elegant";
-
 export function resolveEffects(style: StyleTokens, quality: Quality, settings: EffectSettings = config): ActiveEffects {
   const fx = settings.effects;
   const final = quality === "final";
   return {
-    scrim: fx.scrim,
+    scrim: false,
     shadow: fx.shadow,
-    depthLayer: pick(fx.depthLayer, style.effects.depthLayer),
-    glow: pick(fx.glow, style.effects.glow),
-    glitch: final && isNeon(style.name) && pick(fx.glitch, style.effects.glitch),
-    grain: final && isCinematic(style.name) && pick(fx.grain, style.effects.grain),
+    depthLayer: false,
+    glow: false,
+    glitch: false,
+    grain: false,
     motionBlur: final && settings.motionBlur.enabled,
     drift: final && settings.drift,
   };

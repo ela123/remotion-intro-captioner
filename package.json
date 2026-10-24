@@ -15,6 +15,8 @@
     "proxy": "tsx scripts/make-proxy.ts",
     "srt:fit": "tsx scripts/srt-fit.ts",
     "srt:check": "tsx scripts/srt-check.ts",
+    "transcribe": "tsx scripts/transcribe.ts",
+    "auto": "npm run transcribe && npm run srt:fit && npm run analyze",
     "palette": "tsx scripts/extract-palette.ts",
     "preview": "remotion render LayeredCaption out/preview.mp4 --scale=0.5 --props=./props/preview.json",
     "render": "remotion render LayeredCaption out/intro.mp4 --codec=h264 --crf=17 --props=./props/final.json",
@@ -35,6 +37,7 @@
     "remotion": "4.0.532"
   },
   "devDependencies": {
+    "@remotion/install-whisper-cpp": "4.0.532",
     "@types/node": "22.20.5",
     "@types/react": "18.3.31",
     "dotenv": "18.0.5",

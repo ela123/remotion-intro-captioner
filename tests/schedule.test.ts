@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { bold } from "../src/styles/bold";
+import { POP_THEME } from "../src/styles/pop";
 import { DEFAULT_RECIPE } from "../src/template/recipe";
 import { scheduleCues } from "../src/template/schedule";
 import type { AnnotatedCue, AnnotatedLine, ResolvedRecipe } from "../src/types";
 
-const recipe: ResolvedRecipe = { ...DEFAULT_RECIPE, style: bold, slotTypography: bold.slots };
+const recipe: ResolvedRecipe = { ...DEFAULT_RECIPE, style: POP_THEME, slotTypography: POP_THEME.slots };
 
 const line = (text: string): AnnotatedLine => ({
   text,

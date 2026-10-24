@@ -27,26 +27,16 @@ describe("contrastRatio", () => {
 
 describe("applyPalette", () => {
   it("returns the style unchanged for a null palette", () => {
-    expect(applyPalette(STYLES.bold, null)).toBe(STYLES.bold);
+    expect(applyPalette(STYLES.pop, null)).toBe(STYLES.pop);
   });
 
   it("keeps defaults when the accent fails contrast against #111111", () => {
-    expect(applyPalette(STYLES.minimal, palette("#222244"))).toBe(STYLES.minimal);
+    expect(applyPalette(STYLES.editorial, palette("#222244"))).toBe(STYLES.editorial);
   });
 
-  it("replaces the emphasis accent and accent-colored slots when contrast passes", () => {
-    const result = applyPalette(STYLES.bold, palette("#7CFC00"));
+  it("replaces the emphasis accent when contrast passes", () => {
+    const result = applyPalette(STYLES.pop, palette("#7CFC00"));
     expect(result.emphasis.accentColor).toBe("#7CFC00");
-    expect(result.slots.A.color).toBe("#7CFC00");
-    expect(result.slots.B).toEqual(STYLES.bold.slots.B);
-    expect(result.slots.C).toEqual(STYLES.bold.slots.C);
-    expect(STYLES.bold.slots.A.color).toBe("#FFD60A");
-  });
-
-  it("leaves non-accent colors alone", () => {
-    const result = applyPalette(STYLES.neon, palette("#FFB000"));
-    expect(result.slots.A.color).toBe("#FFB000");
-    expect(result.slots.C.color).toBe("#FF2BD6");
   });
 });
 

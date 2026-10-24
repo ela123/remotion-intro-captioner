@@ -5,13 +5,17 @@ import { LayeredCaption } from "./template/LayeredCaption";
 import { calculateCaptionMetadata } from "./video/metadata";
 import type { CaptionProps } from "./types";
 
+import { config } from "./intro.config";
+
 const defaultProps: CaptionProps = {
   quality: "preview",
-  style: "bold-energetic",
+  style: "pop",
+  looks: config.looks,
+  debug: config.debug,
   safeMargin: 0.08,
   offsetY: 0,
-  maxWordsPerLine: 5,
-  maxLinesPerChunk: 3,
+  maxWordsPerLine: 4,
+  maxLinesPerChunk: 2,
   cues: [],
   captionsDoc: null,
   error: null,

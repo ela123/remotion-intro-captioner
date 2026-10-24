@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { config } from "../src/intro.config";
+import { alignCueWords, type WordTiming } from "../src/srt/align";
 import { parseSrt } from "../src/srt/parse";
 import { estimateWordTimings } from "../src/srt/timing";
 import type {
@@ -20,11 +21,12 @@ Auto-assigns word roles (hero | accent | normal | connector), entrance animation
 and emphasis effects using heuristics, and writes public/captions.json.
 
 Options:
-  --srt <path>     path to input SRT (default: public/${config.srt})
-  --out <path>     path to output JSON (default: public/captions.json)
-  --words <n>      target words per line (default: 4)
-  --lines <n>      target lines per chunk (default: 3)
-  -h, --help       show this help`;
+  --srt <path>         path to input SRT (default: public/${config.srt})
+  --out <path>         path to output JSON (default: public/captions.json)
+  --words-file <path>  path to words.json (default: public/words.json)
+  --words <n>          target words per line (default: 4)
+  --lines <n>          target lines per chunk (default: 3)
+  -h, --help           show this help`;
 
 const STOPWORDS = new Set([
   "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with",
@@ -150,7 +152,12 @@ function analyzeWord(
 
 export function buildCaptionsDocument(
   rawCues: { id: number; startMs: number; endMs: number; lines: string[] }[],
-  options: { maxWordsPerLine?: number; maxLinesPerChunk?: number } = {},
+  options: {
+    maxWordsPerLine?: number;
+    maxLinesPerChunk?: number;
+    wordsJson?: WordTiming[];
+    stats?: { matched: number; interpolated: number };
+  } = {},
 ): CaptionsDoc {
   const maxWordsPerLine = options.maxWordsPerLine ?? 4;
   const maxLinesPerChunk = options.maxLinesPerChunk ?? 3;
@@ -159,11 +166,29 @@ export function buildCaptionsDocument(
   const chunks: ChunkData[] = [];
   let prevEntrance: EntranceType | undefined;
 
+  const cursorRef = { index: 0 };
+  let totalMatched = 0;
+  let totalInterpolated = 0;
+
   for (const cue of rawCues) {
     const parsedLineWords = cue.lines.map((l) =>
       l.split(/\s+/).filter(Boolean).map((w) => ({ text: w, emphasis: false })),
     );
-    const timedLines = estimateWordTimings(parsedLineWords, cue.startMs, cue.endMs);
+
+    let timedLines;
+    if (options.wordsJson && options.wordsJson.length > 0) {
+      const alignRes = alignCueWords(
+        { startMs: cue.startMs, endMs: cue.endMs, lines: parsedLineWords },
+        options.wordsJson,
+        cursorRef,
+      );
+      timedLines = alignRes.timedLines;
+      totalMatched += alignRes.matchedCount;
+      totalInterpolated += alignRes.interpolatedCount;
+    } else {
+      timedLines = estimateWordTimings(parsedLineWords, cue.startMs, cue.endMs);
+    }
+
     const allWords = timedLines.flat();
     if (allWords.length === 0) continue;
 
@@ -218,6 +243,11 @@ export function buildCaptionsDocument(
     }
   }
 
+  if (options.stats) {
+    options.stats.matched = totalMatched;
+    options.stats.interpolated = totalInterpolated;
+  }
+
   return { chunks };
 }
 
@@ -231,6 +261,7 @@ function main(): void {
   const args = splitInlineValues(argv);
   let srtPath = path.join("public", config.srt);
   let outPath = path.join("public", "captions.json");
+  let wordsPath = path.join("public", "words.json");
   let wordsPerLine = 4;
   let linesPerChunk = 3;
 
@@ -238,6 +269,7 @@ function main(): void {
     const a = args[i] ?? "";
     if (a === "--srt") srtPath = args[++i] ?? srtPath;
     else if (a === "--out") outPath = args[++i] ?? outPath;
+    else if (a === "--words-file") wordsPath = args[++i] ?? wordsPath;
     else if (a === "--words") wordsPerLine = parseInt(args[++i] ?? "4", 10);
     else if (a === "--lines") linesPerChunk = parseInt(args[++i] ?? "3", 10);
   }
@@ -251,10 +283,31 @@ function main(): void {
   const { cues, warnings } = parseSrt(srtContent, { offsetMs: config.srtOffsetMs });
   for (const w of warnings) console.warn(`[${w.code}] ${w.message}`);
 
+  let wordsJson: WordTiming[] | undefined;
+  if (existsSync(wordsPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(wordsPath, "utf8"));
+      if (Array.isArray(parsed?.words)) {
+        wordsJson = parsed.words;
+      }
+    } catch (e) {
+      console.warn(`Could not parse words file ${wordsPath}: ${e}`);
+    }
+  }
+
+  const stats = { matched: 0, interpolated: 0 };
   const doc = buildCaptionsDocument(cues, {
     maxWordsPerLine: wordsPerLine,
     maxLinesPerChunk: linesPerChunk,
+    wordsJson,
+    stats,
   });
+
+  if (wordsJson) {
+    console.log(`Aligned words with ${wordsPath}: ${stats.matched} matched, ${stats.interpolated} interpolated.`);
+  } else {
+    console.log("No words.json found; estimated word timings from SRT cue boundaries.");
+  }
 
   writeFileSync(outPath, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
   console.log(`Generated ${outPath} with ${doc.chunks.length} Kinetic Typography chunks.`);

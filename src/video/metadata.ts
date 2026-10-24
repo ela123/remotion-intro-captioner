@@ -50,6 +50,8 @@ export const calculateCaptionMetadata: CalculateMetadataFunction<CaptionProps> =
         cues,
         captionsDoc: props.captionsDoc ?? captionsDoc ?? null,
         style: styleName,
+        looks: props.looks ?? config.looks,
+        debug: props.debug ?? config.debug,
         safeMargin: props.safeMargin ?? config.layout.safeArea.x,
         offsetY: props.offsetY ?? config.layout.offsetY ?? 0,
         maxWordsPerLine: props.maxWordsPerLine ?? config.layout.maxWordsPerLine ?? 5,

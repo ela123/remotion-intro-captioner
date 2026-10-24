@@ -10,11 +10,11 @@ import {
   useVideoConfig,
 } from "remotion";
 import { config } from "../intro.config";
-import { loadStyleFonts } from "../styles/fonts";
-import { Grain } from "../effects/Grain";
+import { computeLookPlan } from "../looks/director";
+import { getLook, lookToStyleTokens, POP_PALETTE } from "../looks/index";
+import { loadAllProjectFonts } from "../styles/fonts";
 import { Background } from "../video/Background";
-import type { AnnotatedCue, CaptionProps, CaptionsDoc, ChunkData, StyleTokens, WordData, WordRole } from "../types";
-import { resolveActiveStyle, resolveEffects } from "./active-style";
+import type { AnnotatedCue, CaptionProps, CaptionsDoc, ChunkData, WordData, WordRole } from "../types";
 import { CaptionBlock } from "./CaptionBlock";
 import { ErrorScreen } from "./ErrorScreen";
 import { referenceUnit } from "./units";
@@ -23,20 +23,20 @@ import { computeChunkLayout, type ChunkLayout } from "./word-layout";
 
 type FontState = { ready: boolean; error: string | null };
 
-function useStyleFonts(style: StyleTokens): FontState {
-  const [handle] = useState(() => delayRender(`Loading fonts for style "${style.name}"`));
+function useAllFonts(): FontState {
+  const [handle] = useState(() => delayRender("Loading project fonts for all looks"));
   const [state, setState] = useState<FontState>({ ready: false, error: null });
 
   useEffect(() => {
     let active = true;
-    loadStyleFonts(style)
+    loadAllProjectFonts()
       .then(() => {
         if (active) setState({ ready: true, error: null });
         continueRender(handle);
       })
       .catch((err: unknown) => {
         const reason = err instanceof Error ? err.message : String(err);
-        const message = `Could not load the fonts for style "${style.name}": ${reason}. Check your internet connection and the style's font settings.`;
+        const message = `Could not load fonts: ${reason}. Check internet connection.`;
         if (getRemotionEnvironment().isRendering) {
           cancelRender(new Error(message));
           return;
@@ -47,7 +47,7 @@ function useStyleFonts(style: StyleTokens): FontState {
     return () => {
       active = false;
     };
-  }, [handle, style]);
+  }, [handle]);
 
   return state;
 }
@@ -70,7 +70,7 @@ function inferRole(wordText: string, indexInLine: number, totalInLine: number): 
   return "normal";
 }
 
-function cuesToDoc(cues: AnnotatedCue[], maxWordsPerLine = 5, maxLinesPerChunk = 3): CaptionsDoc {
+function cuesToDoc(cues: AnnotatedCue[], maxWordsPerLine = 4, maxLinesPerChunk = 2): CaptionsDoc {
   const chunks: ChunkData[] = [];
 
   for (const cue of cues) {
@@ -90,7 +90,6 @@ function cuesToDoc(cues: AnnotatedCue[], maxWordsPerLine = 5, maxLinesPerChunk =
         start: rw.startMs / 1000,
         end: rw.endMs / 1000,
         role,
-        effect: role === "hero" ? "highlight-wipe" : role === "accent" ? "underline-draw" : "none",
       });
 
       if (currentLineWords.length >= wordsPerLine || i === rawWords.length - 1) {
@@ -115,23 +114,19 @@ const Captions: React.FC<CaptionProps> = ({
   captionsDoc,
   hasProxy,
   warnings,
-  style: styleProp,
+  looks: looksProp,
+  debug: debugProp,
   safeMargin = 0.08,
   offsetY = 0,
-  maxWordsPerLine = 5,
-  maxLinesPerChunk = 3,
+  maxWordsPerLine = 4,
+  maxLinesPerChunk = 2,
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps } = useVideoConfig();
   const unit = referenceUnit(width, height);
-
-  const active = useMemo(
-    () => resolveActiveStyle({ ...config, style: styleProp ?? config.style }),
-    [styleProp],
-  );
-  const fonts = useStyleFonts(active.style);
-  const effects = useMemo(() => resolveEffects(active.style, quality), [active, quality]);
   const frameSize = useMemo(() => ({ width, height }), [width, height]);
+
+  const fonts = useAllFonts();
 
   // Convert cues to document if captionsDoc is not directly provided
   const doc: CaptionsDoc = useMemo(() => {
@@ -141,29 +136,49 @@ const Captions: React.FC<CaptionProps> = ({
     return cuesToDoc(cues, maxWordsPerLine, maxLinesPerChunk);
   }, [captionsDoc, cues, maxWordsPerLine, maxLinesPerChunk]);
 
-  // Pre-compute the final layout of every chunk (words measured and positioned in resting slots)
+  // Compute Look Plan using the Director (pure & memoized)
+  const looksConfig = looksProp ?? config.looks;
+  const lookPlan = useMemo(() => {
+    return computeLookPlan(doc.chunks, looksConfig);
+  }, [doc.chunks, looksConfig]);
+
+  // Pre-compute chunk layouts with per-look font metrics
   const chunkLayouts = useMemo((): ChunkLayout[] | null => {
     if (!fonts.ready) return null;
-    return doc.chunks.map((chunk) =>
-      computeChunkLayout(chunk, active.style, frameSize, {
+    return doc.chunks.map((chunk, i) => {
+      const planItem = lookPlan[i] ?? { lookId: "pop", variant: 0 };
+      const lookTokens = getLook(planItem.lookId);
+      const styleTokens = lookToStyleTokens(planItem.lookId);
+
+      return computeChunkLayout(chunk, styleTokens, frameSize, {
         safeMargin,
         offsetY,
         unit,
         fps,
-      }),
-    );
-  }, [fonts.ready, doc, active.style, frameSize, safeMargin, offsetY, unit, fps]);
+        baseFontSizeU: lookTokens.baseFontSizeU,
+      });
+    });
+  }, [fonts.ready, doc, lookPlan, frameSize, safeMargin, offsetY, unit, fps]);
+
+  const isDebug = debugProp ?? config.debug ?? false;
 
   if (fonts.error) return <ErrorScreen message={fonts.error} warnings={warnings} />;
 
   return (
-    <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "#000000" }}>
+    <AbsoluteFill style={{ overflow: "hidden", backgroundColor: POP_PALETTE.ink }}>
       <Background quality={quality} hasProxy={hasProxy} />
 
       {chunkLayouts
         ? chunkLayouts.map((layout, i) => {
-            // Render active chunks (with a 4-frame overlap margin for smooth cuts)
             if (frame < layout.startFrame - 4 || frame > layout.endFrame + 4) return null;
+            const planItem = lookPlan[i] ?? {
+              lookId: "pop",
+              variant: 0,
+              energy: 1,
+              decorBudget: 1,
+            };
+            const styleTokens = lookToStyleTokens(planItem.lookId);
+
             return (
               <CaptionBlock
                 key={`chunk-${i}-${layout.startFrame}`}
@@ -172,15 +187,20 @@ const Captions: React.FC<CaptionProps> = ({
                 fps={fps}
                 unit={unit}
                 quality={quality}
-                style={active.style}
+                style={styleTokens}
                 frameSize={frameSize}
                 offsetY={offsetY}
+                lookId={planItem.lookId}
+                variant={planItem.variant}
+                energy={planItem.energy}
+                decorBudget={planItem.decorBudget}
+                chunkIndex={i + 1}
+                debug={isDebug}
               />
             );
           })
         : null}
 
-      {effects.grain ? <Grain quality={quality} /> : null}
       <WarningsBadge warnings={warnings} unit={unit} />
     </AbsoluteFill>
   );

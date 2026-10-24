@@ -1,187 +1,61 @@
 {
   "chunks": [
     {
-      "start": 0,
-      "end": 3.364,
+      "start": 0.02,
+      "end": 2.23,
       "lines": [
         {
           "words": [
             {
-              "text": "If",
-              "start": 0,
-              "end": 0.235,
+              "text": "-",
+              "start": 0.02,
+              "end": 0.09,
               "role": "normal",
               "effect": "float-breathe",
               "entrance": "mask-reveal"
             },
             {
-              "text": "you",
-              "start": 0.235,
-              "end": 0.548,
+              "text": "And",
+              "start": 0.09,
+              "end": 0.38,
               "role": "connector",
               "effect": "none",
               "entrance": "slice-reveal"
             },
             {
-              "text": "only",
-              "start": 0.548,
-              "end": 0.939,
+              "text": "it's",
+              "start": 0.38,
+              "end": 0.76,
+              "role": "connector",
+              "effect": "none",
+              "entrance": "slide-up"
+            }
+          ]
+        },
+        {
+          "words": [
+            {
+              "text": "on",
+              "start": 0.76,
+              "end": 0.92,
               "role": "normal",
               "effect": "float-breathe",
-              "entrance": "slide-right"
+              "entrance": "mask-reveal"
             },
             {
-              "text": "have",
-              "start": 0.939,
+              "text": "this",
+              "start": 0.96,
               "end": 1.33,
               "role": "connector",
               "effect": "none",
-              "entrance": "typewriter"
-            }
-          ]
-        },
-        {
-          "words": [
+              "entrance": "slice-reveal"
+            },
             {
-              "text": "24",
+              "text": "subject,",
               "start": 1.33,
-              "end": 1.564,
-              "role": "hero",
-              "effect": "count-up",
-              "entrance": "scale-pop"
-            },
-            {
-              "text": "hours",
-              "start": 1.564,
-              "end": 2.034,
+              "end": 2.23,
               "role": "hero",
               "effect": "highlight-wipe",
-              "entrance": "letter-stagger"
-            },
-            {
-              "text": "in",
-              "start": 2.034,
-              "end": 2.268,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slide-up"
-            },
-            {
-              "text": "a",
-              "start": 2.268,
-              "end": 2.425,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "typewriter"
-            }
-          ]
-        },
-        {
-          "words": [
-            {
-              "text": "day,",
-              "start": 2.425,
-              "end": 2.972,
-              "role": "hero",
-              "effect": "glow-pulse",
-              "entrance": "scale-pop"
-            },
-            {
-              "text": "your",
-              "start": 2.972,
-              "end": 3.364,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slice-reveal"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "start": 3.364,
-      "end": 7.04,
-      "lines": [
-        {
-          "words": [
-            {
-              "text": "success",
-              "start": 3.364,
-              "end": 3.989,
-              "role": "hero",
-              "effect": "impact-punch",
-              "entrance": "scale-pop"
-            },
-            {
-              "text": "is",
-              "start": 3.989,
-              "end": 4.224,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slice-reveal"
-            },
-            {
-              "text": "depended",
-              "start": 4.224,
-              "end": 4.928,
-              "role": "hero",
-              "effect": "outline-fill",
-              "entrance": "rotate-in"
-            }
-          ]
-        },
-        {
-          "words": [
-            {
-              "text": "upon",
-              "start": 4.928,
-              "end": 5.319,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "mask-reveal"
-            },
-            {
-              "text": "how",
-              "start": 5.319,
-              "end": 5.632,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slice-reveal"
-            },
-            {
-              "text": "you",
-              "start": 5.632,
-              "end": 5.945,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slide-up"
-            }
-          ]
-        },
-        {
-          "words": [
-            {
-              "text": "use",
-              "start": 5.945,
-              "end": 6.258,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "mask-reveal"
-            },
-            {
-              "text": "the",
-              "start": 6.258,
-              "end": 6.571,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slice-reveal"
-            },
-            {
-              "text": "24.",
-              "start": 6.571,
-              "end": 7.04,
-              "role": "hero",
-              "effect": "count-up",
               "entrance": "rotate-in"
             }
           ]
@@ -189,149 +63,73 @@
       ]
     },
     {
-      "start": 8.24,
-      "end": 10.229,
+      "start": 2.26,
+      "end": 4.1,
       "lines": [
         {
           "words": [
             {
-              "text": "You",
-              "start": 8.24,
-              "end": 8.413,
+              "text": "it's",
+              "start": 2.26,
+              "end": 2.56,
               "role": "normal",
               "effect": "float-breathe",
               "entrance": "mask-reveal"
             },
             {
-              "text": "got",
-              "start": 8.413,
-              "end": 8.586,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slice-reveal"
-            },
-            {
-              "text": "to",
-              "start": 8.586,
-              "end": 8.716,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slide-up"
-            }
-          ]
-        },
-        {
-          "words": [
-            {
-              "text": "hear",
-              "start": 8.716,
-              "end": 8.932,
-              "role": "hero",
-              "effect": "highlight-wipe",
-              "entrance": "scale-pop"
-            },
-            {
-              "text": "me.",
-              "start": 8.932,
-              "end": 9.191,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slice-reveal"
-            },
-            {
-              "text": "People",
-              "start": 9.191,
-              "end": 9.494,
-              "role": "hero",
-              "effect": "color-flash",
-              "entrance": "rotate-in"
-            }
-          ]
-        },
-        {
-          "words": [
-            {
-              "text": "talk",
-              "start": 9.494,
-              "end": 9.71,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "mask-reveal"
-            },
-            {
-              "text": "about",
-              "start": 9.71,
-              "end": 9.97,
+              "text": "called",
+              "start": 2.56,
+              "end": 3.06,
               "role": "accent",
               "effect": "underline-draw",
               "entrance": "blur-in"
             },
             {
-              "text": "Oprah",
-              "start": 9.97,
-              "end": 10.229,
+              "text": "tips",
+              "start": 3.06,
+              "end": 3.39,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "slide-right"
+            },
+            {
+              "text": "included.",
+              "start": 3.39,
+              "end": 4.1,
               "role": "hero",
               "effect": "glow-pulse",
-              "entrance": "rotate-in"
+              "entrance": "mask-reveal"
             }
           ]
         }
       ]
     },
     {
-      "start": 10.229,
-      "end": 13.04,
+      "start": 4.1,
+      "end": 6.3,
       "lines": [
         {
           "words": [
             {
-              "text": "Winfrey,",
-              "start": 10.229,
-              "end": 10.705,
-              "role": "hero",
-              "effect": "impact-punch",
-              "entrance": "scale-pop"
+              "text": "And",
+              "start": 4.1,
+              "end": 4.44,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "slide-left"
             },
             {
-              "text": "you",
-              "start": 10.705,
-              "end": 10.878,
+              "text": "I",
+              "start": 4.51,
+              "end": 4.64,
               "role": "connector",
               "effect": "none",
               "entrance": "slice-reveal"
             },
             {
-              "text": "know,",
-              "start": 10.878,
-              "end": 11.224,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "slide-right"
-            }
-          ]
-        },
-        {
-          "words": [
-            {
-              "text": "Ted",
-              "start": 11.224,
-              "end": 11.397,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "mask-reveal"
-            },
-            {
-              "text": "Turner,",
-              "start": 11.397,
-              "end": 11.829,
-              "role": "hero",
-              "effect": "outline-fill",
-              "entrance": "letter-stagger"
-            },
-            {
-              "text": "Warren",
-              "start": 11.829,
-              "end": 12.132,
+              "text": "wrote",
+              "start": 4.64,
+              "end": 5.31,
               "role": "hero",
               "effect": "color-flash",
               "entrance": "rotate-in"
@@ -341,25 +139,25 @@
         {
           "words": [
             {
-              "text": "Buffett.",
-              "start": 12.132,
-              "end": 12.608,
-              "role": "hero",
-              "effect": "highlight-wipe",
-              "entrance": "scale-pop"
+              "text": "this",
+              "start": 5.31,
+              "end": 5.88,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
             },
             {
-              "text": "Listen",
-              "start": 12.608,
-              "end": 12.91,
-              "role": "hero",
-              "effect": "glow-pulse",
-              "entrance": "letter-stagger"
+              "text": "based",
+              "start": 5.91,
+              "end": 6.19,
+              "role": "accent",
+              "effect": "squiggle-draw",
+              "entrance": "blur-in"
             },
             {
-              "text": "to",
-              "start": 12.91,
-              "end": 13.04,
+              "text": "on",
+              "start": 6.19,
+              "end": 6.3,
               "role": "connector",
               "effect": "none",
               "entrance": "slide-up"
@@ -369,266 +167,416 @@
       ]
     },
     {
-      "start": 13.04,
-      "end": 15.262,
+      "start": 6.31,
+      "end": 7.72,
       "lines": [
         {
           "words": [
             {
-              "text": "me.",
-              "start": 13.04,
-              "end": 13.307,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "mask-reveal"
-            },
-            {
-              "text": "I",
-              "start": 13.307,
-              "end": 13.396,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slice-reveal"
-            },
-            {
-              "text": "don't",
-              "start": 13.396,
-              "end": 13.662,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "slide-right"
-            },
-            {
-              "text": "care",
-              "start": 13.662,
-              "end": 13.884,
+              "text": "participation",
+              "start": 6.31,
+              "end": 7.12,
               "role": "hero",
-              "effect": "impact-punch",
-              "entrance": "mask-reveal"
+              "effect": "highlight-wipe",
+              "entrance": "scale-pop"
+            },
+            {
+              "text": "trophies.",
+              "start": 7.12,
+              "end": 7.72,
+              "role": "hero",
+              "effect": "glow-pulse",
+              "entrance": "letter-stagger"
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "start": 7.72,
+      "end": 9.48,
+      "lines": [
+        {
+          "words": [
+            {
+              "text": "Entitlement,",
+              "start": 7.72,
+              "end": 9.48,
+              "role": "hero",
+              "effect": "color-flash",
+              "entrance": "scale-pop"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "start": 9.48,
+      "end": 12.13,
+      "lines": [
         {
           "words": [
             {
               "text": "how",
-              "start": 13.884,
-              "end": 14.062,
+              "start": 9.48,
+              "end": 9.89,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
+            },
+            {
+              "text": "too",
+              "start": 9.89,
+              "end": 10.3,
               "role": "normal",
               "effect": "float-breathe",
               "entrance": "slide-left"
             },
             {
               "text": "much",
-              "start": 14.062,
-              "end": 14.284,
+              "start": 10.31,
+              "end": 10.86,
               "role": "normal",
               "effect": "float-breathe",
               "entrance": "slide-right"
-            },
-            {
-              "text": "money",
-              "start": 14.284,
-              "end": 14.551,
-              "role": "hero",
-              "effect": "outline-fill",
-              "entrance": "rotate-in"
-            },
-            {
-              "text": "you",
-              "start": 14.551,
-              "end": 14.729,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "typewriter"
             }
           ]
         },
         {
           "words": [
             {
-              "text": "make,",
-              "start": 14.729,
-              "end": 15.084,
+              "text": "of",
+              "start": 10.86,
+              "end": 11.05,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
+            },
+            {
+              "text": "something",
+              "start": 11.05,
+              "end": 11.92,
               "role": "hero",
               "effect": "highlight-wipe",
+              "entrance": "letter-stagger"
+            },
+            {
+              "text": "can",
+              "start": 11.92,
+              "end": 12.13,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "slide-right"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "start": 12.13,
+      "end": 13.54,
+      "lines": [
+        {
+          "words": [
+            {
+              "text": "be",
+              "start": 12.13,
+              "end": 12.27,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
+            },
+            {
+              "text": "just",
+              "start": 12.27,
+              "end": 12.55,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "slide-left"
+            },
+            {
+              "text": "as",
+              "start": 12.55,
+              "end": 12.69,
+              "role": "connector",
+              "effect": "none",
+              "entrance": "slide-up"
+            }
+          ]
+        },
+        {
+          "words": [
+            {
+              "text": "harmful",
+              "start": 12.69,
+              "end": 13.19,
+              "role": "hero",
+              "effect": "glow-pulse",
               "entrance": "scale-pop"
             },
             {
-              "text": "you",
-              "start": 15.084,
-              "end": 15.262,
+              "text": "is",
+              "start": 13.19,
+              "end": 13.33,
               "role": "connector",
               "effect": "none",
               "entrance": "slice-reveal"
+            },
+            {
+              "text": "not",
+              "start": 13.33,
+              "end": 13.54,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "slide-right"
             }
           ]
         }
       ]
     },
     {
-      "start": 15.262,
-      "end": 17.44,
+      "start": 13.54,
+      "end": 14.22,
       "lines": [
         {
           "words": [
             {
-              "text": "only",
-              "start": 15.262,
-              "end": 15.484,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "mask-reveal"
-            },
-            {
-              "text": "get",
-              "start": 15.484,
-              "end": 15.662,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "slide-left"
-            },
-            {
-              "text": "24",
-              "start": 15.662,
-              "end": 15.796,
-              "role": "hero",
-              "effect": "count-up",
-              "entrance": "rotate-in"
-            },
-            {
-              "text": "hours",
-              "start": 15.796,
-              "end": 16.062,
-              "role": "hero",
-              "effect": "glow-pulse",
-              "entrance": "mask-reveal"
-            }
-          ]
-        },
-        {
-          "words": [
-            {
-              "text": "in",
-              "start": 16.062,
-              "end": 16.196,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "slide-left"
-            },
-            {
-              "text": "a",
-              "start": 16.196,
-              "end": 16.284,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "slice-reveal"
-            },
-            {
-              "text": "day.",
-              "start": 16.284,
-              "end": 16.596,
-              "role": "hero",
-              "effect": "impact-punch",
-              "entrance": "rotate-in"
-            },
-            {
-              "text": "And",
-              "start": 16.596,
-              "end": 16.773,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "typewriter"
-            }
-          ]
-        },
-        {
-          "words": [
-            {
-              "text": "the",
-              "start": 16.773,
-              "end": 16.951,
-              "role": "normal",
-              "effect": "float-breathe",
-              "entrance": "mask-reveal"
-            },
-            {
-              "text": "difference",
-              "start": 16.951,
-              "end": 17.44,
-              "role": "hero",
-              "effect": "outline-fill",
-              "entrance": "letter-stagger"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "start": 17.44,
-      "end": 19.84,
-      "lines": [
-        {
-          "words": [
-            {
-              "text": "between",
-              "start": 17.44,
-              "end": 17.867,
+              "text": "enough.",
+              "start": 13.54,
+              "end": 14.22,
               "role": "hero",
               "effect": "color-flash",
               "entrance": "scale-pop"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "start": 14.22,
+      "end": 16.9,
+      "lines": [
+        {
+          "words": [
+            {
+              "text": "How",
+              "start": 14.22,
+              "end": 14.51,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
             },
             {
-              "text": "Oprah",
-              "start": 17.867,
-              "end": 18.187,
-              "role": "hero",
-              "effect": "highlight-wipe",
-              "entrance": "letter-stagger"
-            },
-            {
-              "text": "and",
-              "start": 18.187,
-              "end": 18.4,
+              "text": "we",
+              "start": 14.53,
+              "end": 14.75,
               "role": "connector",
               "effect": "none",
-              "entrance": "slide-up"
+              "entrance": "slice-reveal"
             },
             {
-              "text": "the",
-              "start": 18.4,
-              "end": 18.613,
-              "role": "connector",
-              "effect": "none",
-              "entrance": "typewriter"
+              "text": "all",
+              "start": 14.75,
+              "end": 15.04,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "slide-right"
             }
           ]
         },
         {
           "words": [
             {
-              "text": "person",
-              "start": 18.613,
-              "end": 18.987,
-              "role": "accent",
-              "effect": "squiggle-draw",
-              "entrance": "slide-up"
+              "text": "need",
+              "start": 15.2,
+              "end": 15.49,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
             },
             {
-              "text": "that's",
-              "start": 18.987,
-              "end": 19.36,
+              "text": "good",
+              "start": 15.49,
+              "end": 15.91,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "slide-left"
+            },
+            {
+              "text": "fortune,",
+              "start": 15.91,
+              "end": 16.9,
+              "role": "hero",
+              "effect": "highlight-wipe",
+              "entrance": "rotate-in"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "start": 16.9,
+      "end": 18.79,
+      "lines": [
+        {
+          "words": [
+            {
+              "text": "good",
+              "start": 16.9,
+              "end": 17.35,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
+            },
+            {
+              "text": "fate",
+              "start": 17.4,
+              "end": 17.84,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "slide-left"
+            },
+            {
+              "text": "and",
+              "start": 17.84,
+              "end": 17.98,
+              "role": "connector",
+              "effect": "none",
+              "entrance": "slide-up"
+            }
+          ]
+        },
+        {
+          "words": [
+            {
+              "text": "charity",
+              "start": 17.98,
+              "end": 18.32,
+              "role": "hero",
+              "effect": "glow-pulse",
+              "entrance": "scale-pop"
+            },
+            {
+              "text": "sometimes,",
+              "start": 18.32,
+              "end": 18.79,
+              "role": "hero",
+              "effect": "color-flash",
+              "entrance": "letter-stagger"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "start": 18.88,
+      "end": 21.4,
+      "lines": [
+        {
+          "words": [
+            {
+              "text": "but",
+              "start": 18.88,
+              "end": 20.12,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
+            },
+            {
+              "text": "we",
+              "start": 20.12,
+              "end": 20.22,
+              "role": "connector",
+              "effect": "none",
+              "entrance": "slice-reveal"
+            },
+            {
+              "text": "shouldn't",
+              "start": 20.22,
+              "end": 20.69,
+              "role": "hero",
+              "effect": "highlight-wipe",
+              "entrance": "rotate-in"
+            }
+          ]
+        },
+        {
+          "words": [
+            {
+              "text": "rely",
+              "start": 20.69,
+              "end": 20.9,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
+            },
+            {
+              "text": "on",
+              "start": 20.9,
+              "end": 21,
+              "role": "connector",
+              "effect": "none",
+              "entrance": "slice-reveal"
+            },
+            {
+              "text": "that.",
+              "start": 21,
+              "end": 21.4,
+              "role": "connector",
+              "effect": "none",
+              "entrance": "slide-up"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "start": 21.4,
+      "end": 23.78,
+      "lines": [
+        {
+          "words": [
+            {
+              "text": "It's",
+              "start": 21.4,
+              "end": 22.08,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "mask-reveal"
+            },
+            {
+              "text": "called",
+              "start": 22.08,
+              "end": 23.1,
               "role": "accent",
               "effect": "strike-through",
               "entrance": "blur-in"
             },
             {
-              "text": "broke.",
-              "start": 19.36,
-              "end": 19.84,
+              "text": "tips",
+              "start": 23.1,
+              "end": 23.78,
+              "role": "normal",
+              "effect": "float-breathe",
+              "entrance": "slide-right"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "start": 23.78,
+      "end": 25.68,
+      "lines": [
+        {
+          "words": [
+            {
+              "text": "included.",
+              "start": 23.78,
+              "end": 25.68,
               "role": "hero",
               "effect": "glow-pulse",
-              "entrance": "rotate-in"
+              "entrance": "scale-pop"
             }
           ]
         }

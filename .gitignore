@@ -7,3 +7,6 @@ public/intro.proxy.mp4
 public/*.mov
 public/annotated-cues.json
 .DS_Store
+whisper.cpp/
+tmp-audio.wav
+public/words.json

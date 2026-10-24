@@ -1,21 +1,15 @@
-import type { StyleName, StylePreset, StyleTokens } from "../types";
-import { bold } from "./bold";
-import { cinematic } from "./cinematic";
-import { minimal } from "./minimal";
-import { neon } from "./neon";
-import { PRESET_THEMES } from "./presets";
-
-export const STYLES: Record<StyleName, StyleTokens> = { minimal, neon, bold, cinematic };
+import { getLook, lookToStyleTokens } from "../looks";
+import type { LookId, StyleName, StyleTokens } from "../types";
 
 export function getStyle(name: string): { style: StyleTokens; warning: string | null } {
-  // Check legacy styles first (exact equality – tests assert against these objects)
-  if (Object.hasOwn(STYLES, name)) {
-    return { style: STYLES[name as StyleName], warning: null };
+  if (name === "pop" || name === "editorial" || name === "poster") {
+    return { style: lookToStyleTokens(name as LookId), warning: null };
   }
-  // Check enriched preset themes (new preset names: clean-minimal, neon-techy, etc.)
-  if (Object.hasOwn(PRESET_THEMES, name)) {
-    return { style: PRESET_THEMES[name]!, warning: null };
-  }
-  // Fallback
-  return { style: STYLES.bold, warning: `Unknown style "${name}"; falling back to "bold".` };
+  return { style: lookToStyleTokens("pop"), warning: `Unknown style "${name}"; falling back to "pop".` };
 }
+
+export const STYLES: Record<StyleName, StyleTokens> = {
+  pop: lookToStyleTokens("pop"),
+  editorial: lookToStyleTokens("editorial"),
+  poster: lookToStyleTokens("poster"),
+};

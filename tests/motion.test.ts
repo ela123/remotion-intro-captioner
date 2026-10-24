@@ -147,7 +147,7 @@ describe("driftScale", () => {
 });
 
 describe("pose", () => {
-  const recipe = resolveRecipe(STYLES.bold);
+  const recipe = resolveRecipe(STYLES.pop);
   const lineB = recipe.lines[1];
   const schedule = { enterStart: 10, enterFrames: 14, settleFrames: 6, exitStart: 60, exitFrames: 10, fadeOnlyExit: false };
   const input = { schedule, recipe: lineB, settle: recipe.settle, enterDistance: 100, exitDistance: 100, fps: 30 };

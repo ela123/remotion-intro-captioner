@@ -1,67 +1,72 @@
 import { fontFamily as antonFamily, loadFont as loadAnton } from "@remotion/google-fonts/Anton";
-import { fontFamily as interFamily, loadFont as loadInter } from "@remotion/google-fonts/Inter";
-import { fontFamily as jetBrainsFamily, loadFont as loadJetBrainsMono } from "@remotion/google-fonts/JetBrainsMono";
-import { fontFamily as montserratFamily, loadFont as loadMontserrat } from "@remotion/google-fonts/Montserrat";
-import { fontFamily as playfairFamily, loadFont as loadPlayfairDisplay } from "@remotion/google-fonts/PlayfairDisplay";
-import { fontFamily as poppinsFamily, loadFont as loadPoppins } from "@remotion/google-fonts/Poppins";
-import { fontFamily as spaceGroteskFamily, loadFont as loadSpaceGrotesk } from "@remotion/google-fonts/SpaceGrotesk";
-import type { FontFamily, StyleTokens } from "../types";
+import { fontFamily as dmSansFamily, loadFont as loadDMSans } from "@remotion/google-fonts/DMSans";
+import { fontFamily as frauncesFamily, loadFont as loadFraunces } from "@remotion/google-fonts/Fraunces";
+import { fontFamily as fredokaFamily, loadFont as loadFredoka } from "@remotion/google-fonts/Fredoka";
+import { fontFamily as lilitaOneFamily, loadFont as loadLilitaOne } from "@remotion/google-fonts/LilitaOne";
+import { fontFamily as spaceMonoFamily, loadFont as loadSpaceMono } from "@remotion/google-fonts/SpaceMono";
+import type { FontFamily } from "../types";
 
 type Loaded = { fontFamily: string; waitUntilDone: () => Promise<unknown> };
-type Loader<W extends string> = (style: "normal", options: { weights: W[]; subsets: "latin"[] }) => Loaded;
-type FamilyLoader = (weights: number[]) => Loaded;
 
-function familyLoader<W extends string>(load: Loader<W>): FamilyLoader {
-  return (weights) => load("normal", { weights: weights.map((w) => String(w) as W), subsets: ["latin"] });
-}
-
-const SANS = `"Helvetica Neue", Arial, sans-serif`;
-
-const FAMILIES: Record<FontFamily, { name: string; fallback: string; load: FamilyLoader }> = {
-  Inter: { name: interFamily, fallback: SANS, load: familyLoader(loadInter) },
-  "Space Grotesk": { name: spaceGroteskFamily, fallback: SANS, load: familyLoader(loadSpaceGrotesk) },
-  "JetBrains Mono": {
-    name: jetBrainsFamily,
-    fallback: `"SFMono-Regular", Menlo, Consolas, monospace`,
-    load: familyLoader(loadJetBrainsMono),
+export const FAMILIES: Record<FontFamily, { name: string; fallback: string; load: (weights: number[], fontStyle?: "normal" | "italic") => Loaded }> = {
+  "Lilita One": {
+    name: lilitaOneFamily,
+    fallback: `"Impact", "Arial Black", sans-serif`,
+    load: (weights) => loadLilitaOne("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
   },
-  Anton: { name: antonFamily, fallback: `Impact, "Arial Narrow", sans-serif`, load: familyLoader(loadAnton) },
-  Montserrat: { name: montserratFamily, fallback: SANS, load: familyLoader(loadMontserrat) },
-  Poppins: { name: poppinsFamily, fallback: SANS, load: familyLoader(loadPoppins) },
-  "Playfair Display": {
-    name: playfairFamily,
-    fallback: `Georgia, "Times New Roman", serif`,
-    load: familyLoader(loadPlayfairDisplay),
+  "Bagel Fat One": {
+    name: lilitaOneFamily,
+    fallback: `"Impact", "Arial Black", sans-serif`,
+    load: (weights) => loadLilitaOne("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+  },
+  Fredoka: {
+    name: fredokaFamily,
+    fallback: `"Arial Rounded MT Bold", "Nunito", sans-serif`,
+    load: (weights) => loadFredoka("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+  },
+  Fraunces: {
+    name: frauncesFamily,
+    fallback: `"Georgia", "Times New Roman", serif`,
+    load: (weights, fontStyle = "normal") => loadFraunces(fontStyle as any, { weights: weights.map(String) as any, subsets: ["latin"] }),
+  },
+  "DM Sans": {
+    name: dmSansFamily,
+    fallback: `"Helvetica Neue", Arial, sans-serif`,
+    load: (weights) => loadDMSans("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+  },
+  Anton: {
+    name: antonFamily,
+    fallback: `"Impact", "Arial Black", "Trebuchet MS", sans-serif`,
+    load: (weights) => loadAnton("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+  },
+  "Space Mono": {
+    name: spaceMonoFamily,
+    fallback: `"Courier New", Courier, monospace`,
+    load: (weights) => loadSpaceMono("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
   },
 };
 
-function styleFontWeights(style: StyleTokens): Map<FontFamily, number[]> {
-  const byFamily = new Map<FontFamily, number[]>();
-  const add = (family: FontFamily, weight: number) => {
-    const weights = byFamily.get(family) ?? [];
-    if (!weights.includes(weight)) weights.push(weight);
-    byFamily.set(family, weights);
-  };
-  if (style.slots) {
-    for (const slot of Object.values(style.slots)) {
-      add(slot.family, slot.weight);
-    }
-  }
-  if (style.roles) {
-    for (const role of Object.values(style.roles)) {
-      add(role.family, role.weight);
-    }
-  }
-  return byFamily;
-}
+export async function loadAllProjectFonts(): Promise<void> {
+  const loads: Loaded[] = [
+    FAMILIES["Lilita One"].load([400]),
+    FAMILIES.Fredoka.load([500, 600, 700]),
+    FAMILIES.Fraunces.load([400, 600], "normal"),
+    FAMILIES.Fraunces.load([700, 900], "italic"),
+    FAMILIES["DM Sans"].load([500]),
+    FAMILIES.Anton.load([400]),
+    FAMILIES["Space Mono"].load([400]),
+  ];
 
-export async function loadStyleFonts(style: StyleTokens): Promise<void> {
-  const loads = [...styleFontWeights(style)].map(([family, weights]) => FAMILIES[family].load(weights));
-  await Promise.all(loads.map((loaded) => loaded.waitUntilDone()));
+  await Promise.all(
+    loads.map((loaded) =>
+      loaded.waitUntilDone().catch((err) => {
+        console.warn(`Font load fallback warning: ${(err as Error)?.message ?? err}`);
+      }),
+    ),
+  );
 }
 
 export function fontFamilyCss(family: FontFamily): string {
-  const info = FAMILIES[family];
-  if (!info) return SANS;
+  const info = FAMILIES[family] ?? FAMILIES["Lilita One"];
   return `"${info.name}", ${info.fallback}`;
 }

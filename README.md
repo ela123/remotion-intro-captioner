@@ -10,11 +10,11 @@ A production-grade **kinetic-typography** caption renderer built on top of Remot
 # Install dependencies
 npm install
 
-# Place your video and SRT
-cp your-video.mp4   public/intro.mp4
-cp your-captions.srt public/captions.srt
+# Place your video or pass its path directly to transcribe:
+# Automatically transcribes audio -> public/captions.srt & public/words.json
+npm run transcribe -- path/to/your-video.mp4
 
-# Auto-assign roles, entrances & effects → writes public/captions.json
+# Review public/captions.srt if desired, then generate captions.json:
 npm run analyze
 
 # Preview in Remotion Studio
@@ -33,8 +33,10 @@ npm run render
 
 | Command | What it does |
 |---------|--------------|
+| `npm run transcribe` | Extract audio → transcribe with local whisper.cpp → write `public/captions.srt` & `words.json` |
+| `npm run auto` | Full end-to-end pipeline: `transcribe` → `srt:fit` → `analyze` |
 | `npm run dev` | Open Remotion Studio (hot-reload) |
-| `npm run analyze` | Parse SRT → assign roles/effects → write `public/captions.json` |
+| `npm run analyze` | Parse SRT → align exact word timings & assign roles/effects → write `public/captions.json` |
 | `npm run chunk` | Split SRT into layout chunks (alternative to analyze) |
 | `npm run preview` | Render `out/preview.mp4` at 0.5× scale (fast preview) |
 | `npm run render` | Render `out/intro.mp4` at full resolution, H.264 CRF 17 |
@@ -43,6 +45,43 @@ npm run render
 | `npm run analyze:srt` | Old marker-based annotator (emphasis from `*asterisks*`) |
 | `npm test` | Run unit tests |
 | `npm run typecheck` | TypeScript type-check only |
+
+> **Which script to use?** Use `analyze` for the recommended automatic kinetic typography pipeline (heuristic roles, animations, and exact word timings), `chunk` when you only want layout chunking with optional manual chunk overrides, and `analyze:srt` when you want legacy asterisk-based emphasis markers (`*word*`).
+
+---
+
+## Auto-transcription (video → captions)
+
+Generate captions locally, offline, and for free using Remotion's bundled ffmpeg and `whisper.cpp`.
+
+### Prerequisites & First-Run Notes
+- **Local & Offline**: Runs fully on your machine with zero API keys or external services. Remotion's bundled ffmpeg is used automatically.
+- **First Run**: Automatically downloads `whisper.cpp` (v1.5.5 prebuilt binary for Windows) and the Whisper model (~470 MB for the default `small.en` model) into `whisper.cpp/`. Subsequent runs use the cached files immediately.
+- **Windows note**: If whisper.cpp ever needs to be compiled on Windows, ensure Visual Studio Build Tools (Desktop development with C++) and CMake are installed.
+
+### Commands & Usage
+```bash
+# Transcribe an external video (copies it to public/intro.mp4 and generates captions)
+npm run transcribe -- "C:\Videos\my-intro.mp4"
+
+# Transcribe an existing public/intro.mp4
+npm run transcribe
+
+# Select a different Whisper model (base.en ~140 MB, small.en ~470 MB, medium.en ~1.5 GB)
+npm run transcribe -- --model base.en
+
+# Overwrite existing public/captions.srt
+npm run transcribe -- --force
+
+# Complete automated pipeline (transcribe -> srt:fit -> analyze)
+npm run auto
+```
+
+### Review Step
+After transcription:
+1. Open and review `public/captions.srt` to tweak any wording or cue breaks.
+2. Run `npm run analyze` to compute exact word alignments and assign kinetic typography animations into `public/captions.json`.
+3. Preview with `npm run dev` or render with `npm run preview`.
 
 ---
 
@@ -229,16 +268,16 @@ src/
     Glitch.tsx           ← RGB split glitch
     ...
 scripts/
+  transcribe.ts          ← video → words.json & captions.srt (whisper.cpp)
   analyze.ts             ← SRT → captions.json (roles + effects)
   chunk.ts               ← SRT → chunks.json (layout chunks only)
   srt-fit.ts             ← re-chunk messy SRTs
 public/
   intro.mp4              ← your source video (≤ 30 s)
+  words.json             ← exact word timestamps from speech-to-text
   captions.srt           ← your SRT
   captions.json          ← auto-generated, hand-editable
 props/
   preview.json           ← props for preview render
   final.json             ← props for final render
 ```
-"# remotion-intro-captioner" 
-"# remotion-intro-captioner" 

@@ -1,7 +1,7 @@
-export type LegacyStyleName = "minimal" | "neon" | "bold" | "cinematic";
-export type StylePresetName = "clean-minimal" | "neon-techy" | "bold-energetic" | "cinematic-elegant";
-export type StyleName = LegacyStyleName;
-export type StylePreset = StylePresetName | LegacyStyleName;
+export type LookId = "pop" | "editorial" | "poster";
+export type StylePresetName = LookId;
+export type StyleName = LookId;
+export type StylePreset = LookId;
 
 export type Quality = "preview" | "final";
 export type SlotName = "A" | "B" | "C";
@@ -15,13 +15,13 @@ export type Align = "left" | "center" | "right";
 export type AutoFlag = boolean | "auto";
 
 export type FontFamily =
-  | "Inter"
-  | "Space Grotesk"
-  | "JetBrains Mono"
+  | "Lilita One"
+  | "Bagel Fat One"
+  | "Fredoka"
+  | "Fraunces"
+  | "DM Sans"
   | "Anton"
-  | "Montserrat"
-  | "Poppins"
-  | "Playfair Display";
+  | "Space Mono";
 
 export type DeepPartial<T> = {
   [K in keyof T]?: T[K] extends (infer U)[]
@@ -130,33 +130,81 @@ export type RoleTypography = {
   fontStyle?: "normal" | "italic";
 };
 
+// Pop entrances
+export type PopEntrance =
+  | "sticker-slap"
+  | "spin-pop"
+  | "jelly"
+  | "drop-bounce"
+  | "pop"
+  | "wiggle-in"
+  | "fade-pop";
+
+// Editorial entrances
+export type EditorialEntrance =
+  | "drop-through-mask"
+  | "rise-mask"
+  | "soft-drop"
+  | "track-in";
+
+// Poster entrances
+export type PosterEntrance =
+  | "stomp"
+  | "bar-wipe-reveal"
+  | "cut-in"
+  | "type-on";
+
 export type EntranceType =
-  | "mask-reveal"
-  | "slide-up"
-  | "slide-down"
-  | "slide-left"
-  | "slide-right"
+  | PopEntrance
+  | EditorialEntrance
+  | PosterEntrance
   | "scale-pop"
-  | "blur-in"
   | "letter-stagger"
   | "rotate-in"
+  | "mask-reveal"
+  | "slide-up"
+  | "blur-in"
   | "tracking-collapse"
   | "typewriter"
-  | "slice-reveal";
+  | "slice-reveal"
+  | "slide-left"
+  | "slide-right"
+  | (string & {});
+
+export type PopEmphasis =
+  | "marker-highlight"
+  | "wobble"
+  | "squash-bounce"
+  | "doodle-underline"
+  | "star-burst";
+
+export type EditorialEmphasis =
+  | "weight-swell"
+  | "rule-draw"
+  | "color-turn"
+  | "italic-lean";
+
+export type PosterEmphasis =
+  | "invert-block"
+  | "ghost-echo"
+  | "karaoke-fill";
 
 export type EmphasisEffect =
+  | PopEmphasis
+  | EditorialEmphasis
+  | PosterEmphasis
+  | "count-up"
+  | "none"
   | "highlight-wipe"
   | "underline-draw"
   | "squiggle-draw"
+  | "impact-punch"
   | "color-flash"
+  | "glow-pulse"
   | "outline-fill"
   | "strike-through"
-  | "impact-punch"
-  | "glitch-rgb"
-  | "glow-pulse"
-  | "count-up"
   | "float-breathe"
-  | "none";
+  | (string & {});
 
 export type WordData = {
   text: string;
@@ -200,29 +248,16 @@ export type StyleEffects = {
   grain: boolean;
 };
 
-export type StyleGraphics = {
-  brackets: boolean;
-  accentLines: boolean;
-  rings: boolean;
-  glowBlob: boolean;
-  sweep: boolean;
-  particles: boolean;
-  maxParticles: number;
-  vignette: boolean;
-};
-
 export type StyleTokens = {
   name: StyleName;
   slots: Record<SlotName, SlotTypography>;
   roles?: Record<WordRole, RoleTypography>;
-  graphics?: StyleGraphics;
   recipe: RecipeOverride;
   durationMultiplier: number;
   emphasis: EmphasisSpec;
   effects: StyleEffects;
 };
 
-/** Recipe after the precedence merge and the style duration multiplier, still in 30 fps frames. */
 export type ResolvedRecipe = Recipe & {
   style: StyleTokens;
   slotTypography: Record<SlotName, SlotTypography>;
@@ -235,6 +270,21 @@ export type Palette = {
   light: string;
 };
 
+export type LookPlanItem = {
+  lookId: LookId;
+  variant: 0 | 1 | 2;
+  energy: number;
+  decorBudget: number; // 1.0 or 0.5 (breathing)
+  hasHook?: boolean;
+};
+
+export type LooksConfig = {
+  enabled: LookId[];
+  force: LookId | null;
+  sequence: LookId[] | null;
+  energy: number;
+};
+
 export type IntroConfig = {
   video: string;
   proxyVideo: string;
@@ -243,6 +293,8 @@ export type IntroConfig = {
   srtOffsetMs: number;
   maxDurationSec: number;
   cueSource: "srt" | "json";
+  looks: LooksConfig;
+  debug: boolean;
   style: StylePreset;
   recipe: RecipeOverride;
   layout: {
@@ -263,6 +315,7 @@ export type IntroConfig = {
     glitch: AutoFlag;
     grain: AutoFlag;
   };
+  footageIsLight?: boolean;
   motionBlur: { enabled: boolean };
   drift: boolean;
   outputScale: number;
@@ -272,13 +325,14 @@ export type IntroConfig = {
 export type CaptionProps = {
   quality: Quality;
   style?: StylePreset;
+  looks?: LooksConfig;
+  debug?: boolean;
   safeMargin?: number;
   offsetY?: number;
   maxWordsPerLine?: number;
   maxLinesPerChunk?: number;
   cues: AnnotatedCue[];
   captionsDoc?: CaptionsDoc | null;
-  /** Set by calculateMetadata when something blocks rendering (missing video/SRT). */
   error: string | null;
   warnings: string[];
   hasProxy: boolean;

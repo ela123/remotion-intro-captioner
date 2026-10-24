@@ -47,7 +47,14 @@ const BASE_CONFIG: IntroConfig = {
   srtOffsetMs: 0,
   maxDurationSec: 30,
   cueSource: "srt",
-  style: "bold",
+  looks: {
+    enabled: ["pop", "editorial", "poster"],
+    force: null,
+    sequence: null,
+    energy: 1,
+  },
+  debug: false,
+  style: "pop",
   recipe: {},
   layout: {
     anchor: { vertical: "bottom", horizontal: "center" },

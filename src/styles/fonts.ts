@@ -1,69 +1,198 @@
-import { fontFamily as antonFamily, loadFont as loadAnton } from "@remotion/google-fonts/Anton";
-import { fontFamily as dmSansFamily, loadFont as loadDMSans } from "@remotion/google-fonts/DMSans";
-import { fontFamily as frauncesFamily, loadFont as loadFraunces } from "@remotion/google-fonts/Fraunces";
-import { fontFamily as fredokaFamily, loadFont as loadFredoka } from "@remotion/google-fonts/Fredoka";
-import { fontFamily as lilitaOneFamily, loadFont as loadLilitaOne } from "@remotion/google-fonts/LilitaOne";
-import { fontFamily as spaceMonoFamily, loadFont as loadSpaceMono } from "@remotion/google-fonts/SpaceMono";
+import { loadFont } from "@remotion/fonts";
+import { cancelRender, staticFile } from "remotion";
 import type { FontFamily } from "../types";
 
-type Loaded = { fontFamily: string; waitUntilDone: () => Promise<unknown> };
+export type Loaded = { fontFamily: string; waitUntilDone: () => Promise<unknown> };
 
-export const FAMILIES: Record<FontFamily, { name: string; fallback: string; load: (weights: number[], fontStyle?: "normal" | "italic") => Loaded }> = {
+export const FAMILIES: Record<
+  FontFamily,
+  {
+    name: string;
+    fallback: string;
+    load: (weights: number[], fontStyle?: "normal" | "italic") => Loaded;
+  }
+> = {
   "Lilita One": {
-    name: lilitaOneFamily,
+    name: "Lilita One",
     fallback: `"Impact", "Arial Black", sans-serif`,
-    load: (weights) => loadLilitaOne("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+    load: () => {
+      const promise = loadFont({
+        family: "Lilita One",
+        url: staticFile("fonts/LilitaOne-Regular.woff2"),
+        weight: "400",
+        style: "normal",
+      });
+      return { fontFamily: "Lilita One", waitUntilDone: () => promise };
+    },
   },
   "Bagel Fat One": {
-    name: lilitaOneFamily,
+    name: "Lilita One",
     fallback: `"Impact", "Arial Black", sans-serif`,
-    load: (weights) => loadLilitaOne("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+    load: () => {
+      const promise = loadFont({
+        family: "Lilita One",
+        url: staticFile("fonts/LilitaOne-Regular.woff2"),
+        weight: "400",
+        style: "normal",
+      });
+      return { fontFamily: "Lilita One", waitUntilDone: () => promise };
+    },
   },
   Fredoka: {
-    name: fredokaFamily,
+    name: "Fredoka",
     fallback: `"Arial Rounded MT Bold", "Nunito", sans-serif`,
-    load: (weights) => loadFredoka("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+    load: () => {
+      const promise = loadFont({
+        family: "Fredoka",
+        url: staticFile("fonts/Fredoka-Variable.woff2"),
+        weight: "300 700",
+        style: "normal",
+      });
+      return { fontFamily: "Fredoka", waitUntilDone: () => promise };
+    },
   },
   Fraunces: {
-    name: frauncesFamily,
+    name: "Fraunces",
     fallback: `"Georgia", "Times New Roman", serif`,
-    load: (weights, fontStyle = "normal") => loadFraunces(fontStyle as any, { weights: weights.map(String) as any, subsets: ["latin"] }),
+    load: (_weights, fontStyle = "normal") => {
+      const isItalic = fontStyle === "italic";
+      const promise = loadFont({
+        family: "Fraunces",
+        url: staticFile(
+          isItalic ? "fonts/Fraunces-Italic-Variable.woff2" : "fonts/Fraunces-Normal-Variable.woff2",
+        ),
+        style: isItalic ? "italic" : "normal",
+        weight: "100 900",
+      });
+      return { fontFamily: "Fraunces", waitUntilDone: () => promise };
+    },
   },
   "DM Sans": {
-    name: dmSansFamily,
+    name: "DM Sans",
     fallback: `"Helvetica Neue", Arial, sans-serif`,
-    load: (weights) => loadDMSans("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+    load: () => {
+      const promise = loadFont({
+        family: "DM Sans",
+        url: staticFile("fonts/DMSans-Variable.woff2"),
+        weight: "100 900",
+        style: "normal",
+      });
+      return { fontFamily: "DM Sans", waitUntilDone: () => promise };
+    },
   },
   Anton: {
-    name: antonFamily,
+    name: "Anton",
     fallback: `"Impact", "Arial Black", "Trebuchet MS", sans-serif`,
-    load: (weights) => loadAnton("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+    load: () => {
+      const promise = loadFont({
+        family: "Anton",
+        url: staticFile("fonts/Anton-Regular.woff2"),
+        weight: "400",
+        style: "normal",
+      });
+      return { fontFamily: "Anton", waitUntilDone: () => promise };
+    },
   },
   "Space Mono": {
-    name: spaceMonoFamily,
+    name: "Space Mono",
     fallback: `"Courier New", Courier, monospace`,
-    load: (weights) => loadSpaceMono("normal", { weights: weights.map(String) as any, subsets: ["latin"] }),
+    load: (weights) => {
+      const promises: Promise<void>[] = [
+        loadFont({
+          family: "Space Mono",
+          url: staticFile("fonts/SpaceMono-Regular.woff2"),
+          weight: "400",
+          style: "normal",
+        }),
+      ];
+      if (weights.includes(700)) {
+        promises.push(
+          loadFont({
+            family: "Space Mono",
+            url: staticFile("fonts/SpaceMono-Bold.woff2"),
+            weight: "700",
+            style: "normal",
+          }),
+        );
+      }
+      return {
+        fontFamily: "Space Mono",
+        waitUntilDone: () => Promise.all(promises),
+      };
+    },
   },
 };
 
-export async function loadAllProjectFonts(): Promise<void> {
-  const loads: Loaded[] = [
-    FAMILIES["Lilita One"].load([400]),
-    FAMILIES.Fredoka.load([500, 600, 700]),
-    FAMILIES.Fraunces.load([400, 600], "normal"),
-    FAMILIES.Fraunces.load([700, 900], "italic"),
-    FAMILIES["DM Sans"].load([500]),
-    FAMILIES.Anton.load([400]),
-    FAMILIES["Space Mono"].load([400]),
-  ];
+let fontLoadingPromise: Promise<void> | null = null;
 
-  await Promise.all(
-    loads.map((loaded) =>
-      loaded.waitUntilDone().catch((err) => {
-        console.warn(`Font load fallback warning: ${(err as Error)?.message ?? err}`);
-      }),
-    ),
-  );
+export async function loadAllProjectFonts(): Promise<void> {
+  if (typeof document === "undefined") return;
+  if (fontLoadingPromise) return fontLoadingPromise;
+
+  fontLoadingPromise = (async () => {
+    try {
+      await Promise.all([
+        loadFont({
+          family: "Lilita One",
+          url: staticFile("fonts/LilitaOne-Regular.woff2"),
+          weight: "400",
+          style: "normal",
+        }),
+        loadFont({
+          family: "Fredoka",
+          url: staticFile("fonts/Fredoka-Variable.woff2"),
+          weight: "300 700",
+          style: "normal",
+        }),
+        loadFont({
+          family: "Fraunces",
+          url: staticFile("fonts/Fraunces-Normal-Variable.woff2"),
+          weight: "100 900",
+          style: "normal",
+        }),
+        loadFont({
+          family: "Fraunces",
+          url: staticFile("fonts/Fraunces-Italic-Variable.woff2"),
+          weight: "100 900",
+          style: "italic",
+        }),
+        loadFont({
+          family: "DM Sans",
+          url: staticFile("fonts/DMSans-Variable.woff2"),
+          weight: "100 900",
+          style: "normal",
+        }),
+        loadFont({
+          family: "Anton",
+          url: staticFile("fonts/Anton-Regular.woff2"),
+          weight: "400",
+          style: "normal",
+        }),
+        loadFont({
+          family: "Space Mono",
+          url: staticFile("fonts/SpaceMono-Regular.woff2"),
+          weight: "400",
+          style: "normal",
+        }),
+        loadFont({
+          family: "Space Mono",
+          url: staticFile("fonts/SpaceMono-Bold.woff2"),
+          weight: "700",
+          style: "normal",
+        }),
+      ]);
+
+      if (typeof document !== "undefined" && document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      cancelRender(err);
+      throw err;
+    }
+  })();
+
+  return fontLoadingPromise;
 }
 
 export function fontFamilyCss(family: FontFamily): string {

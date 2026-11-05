@@ -11,8 +11,14 @@ const FALLBACK = { width: 1920, height: 1080, fps: 30, durationInFrames: 150 } a
 
 const formatWarning = (w: SrtWarning): string => `[${w.code}] ${w.message}`;
 
-function cappedDuration(video: VideoInfo, maxDurationSec: number): { durationInFrames: number; warning: string | null } {
+function cappedDuration(
+  video: VideoInfo,
+  maxDurationSec?: number | null,
+): { durationInFrames: number; warning: string | null } {
   const videoFrames = Math.round(video.durationInSeconds * video.fps);
+  if (!maxDurationSec || maxDurationSec <= 0 || !Number.isFinite(maxDurationSec)) {
+    return { durationInFrames: Math.max(1, videoFrames), warning: null };
+  }
   const capFrames = Math.floor(maxDurationSec * video.fps);
   const warning =
     videoFrames > capFrames
@@ -26,7 +32,8 @@ export const calculateCaptionMetadata: CalculateMetadataFunction<CaptionProps> =
   try {
     const video = await readVideo(abortSignal);
     const { fps } = video;
-    const { durationInFrames, warning: trimWarning } = cappedDuration(video, config.maxDurationSec);
+    const maxDuration = props.maxDurationSec !== undefined ? props.maxDurationSec : config.maxDurationSec;
+    const { durationInFrames, warning: trimWarning } = cappedDuration(video, maxDuration);
     if (trimWarning) warnings.push(trimWarning);
 
     const { cues, captionsDoc, warnings: cueWarnings } = await loadCues((durationInFrames / fps) * 1000, abortSignal);
@@ -56,6 +63,7 @@ export const calculateCaptionMetadata: CalculateMetadataFunction<CaptionProps> =
         offsetY: props.offsetY ?? config.layout.offsetY ?? 0,
         maxWordsPerLine: props.maxWordsPerLine ?? config.layout.maxWordsPerLine ?? 5,
         maxLinesPerChunk: props.maxLinesPerChunk ?? config.layout.maxLinesPerChunk ?? 3,
+        maxDurationSec: maxDuration,
         error: null,
         warnings,
         hasProxy: proxy.hasProxy,

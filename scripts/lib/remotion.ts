@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import { projectRoot } from "./paths";
+import { projectRoot } from "./paths.js";
 
 export function remotionCliPath(): string | null {
   try {
@@ -24,7 +24,17 @@ export function runRemotion(args: string[]): Promise<void> {
   if (!cli) return Promise.reject(new Error("Could not find the Remotion CLI. Run `npm i` first."));
   console.log(`\n$ npx remotion ${args.join(" ")}`);
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(process.execPath, [cli, ...args], { cwd: projectRoot, stdio: "inherit" });
+    const child = spawn(process.execPath, [cli, ...args], {
+      cwd: projectRoot,
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        OFFLINE: "1",
+        NO_UPDATE_NOTIFIER: "1",
+        REMOTION_DISABLE_TELEMETRY: "1",
+        REMOTION_TELEMETRY: "0",
+      },
+    });
     child.on("error", reject);
     child.on("close", (code) => {
       if (code === 0) resolvePromise();

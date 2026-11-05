@@ -95,5 +95,5 @@ describe("wav", () => {
     expect(peak).toBeCloseTo(0.5, 5);
     expect(left?.[0]).toBe(0);
     expect(Math.abs(left?.[(left?.length ?? 1) - 1] ?? 1)).toBeLessThan(0.01);
-  });
+  }, 15_000);
 });

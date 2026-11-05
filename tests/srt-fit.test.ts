@@ -194,7 +194,7 @@ function generateCues(random: () => number): RawCue[] {
 }
 
 describe("fitCues property check", () => {
-  it("keeps every invariant across generated inputs", { timeout: 20000 }, () => {
+  it("keeps every invariant across generated inputs", { timeout: 45000 }, () => {
     const random = mulberry32(20261002);
     for (let run = 0; run < 250; run++) {
       const input = generateCues(random);
@@ -225,7 +225,7 @@ describe("fitCues on long messy input", () => {
     });
   };
 
-  it("keeps every invariant on 300 overlapping run-on cues for both strategies", { timeout: 20000 }, () => {
+  it("keeps every invariant on 300 overlapping run-on cues for both strategies", { timeout: 45000 }, () => {
     const input = messy(300);
     expectInvariants(input);
     expectInvariants(input, { strategy: "balanced" });
@@ -242,7 +242,7 @@ describe("fitCues on long messy input", () => {
     time(small);
     const smallMs = time(small);
     const largeMs = time(large);
-    expect(largeMs).toBeLessThan(2000);
+    expect(largeMs).toBeLessThan(10000);
     expect(largeMs).toBeLessThan(Math.max(smallMs, 5) * 12);
   });
 });

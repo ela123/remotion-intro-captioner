@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
-import { projectRoot } from "./paths";
-import { remotionCliPath } from "./remotion";
+import { projectRoot } from "./paths.js";
+import { remotionCliPath } from "./remotion.js";
 
 export type Tool = "ffmpeg" | "ffprobe";
 
@@ -22,6 +22,11 @@ function works(command: string, args: string[]): boolean {
 }
 
 function printInstallHelp(tool: Tool): never {
+  if (process.env.OFFLINE === "1") {
+    console.error(`Offline error: ${tool} is missing from PATH.`);
+    console.error(`In offline mode, ${tool} must already be installed and available in PATH.`);
+    process.exit(1);
+  }
   console.error(`Could not find ${tool}.`);
   console.error("Neither a system install nor Remotion's bundled copy (npx remotion " + tool + ") works.");
   console.error("Run `npm i` first. If it still fails, install ffmpeg:");

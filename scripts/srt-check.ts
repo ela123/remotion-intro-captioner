@@ -26,7 +26,8 @@ async function readVideoDurationMs(videoPath: string): Promise<number | null> {
       fields: { slowDurationInSeconds: true },
       acknowledgeRemotionLicense: true,
     });
-    return Math.min(slowDurationInSeconds, config.maxDurationSec) * 1000;
+    const cap = config.maxDurationSec && config.maxDurationSec > 0 ? config.maxDurationSec : Infinity;
+    return Math.min(slowDurationInSeconds, cap) * 1000;
   } catch (error) {
     console.warn(`Could not read video duration from ${videoPath}: ${(error as Error).message}`);
     return null;

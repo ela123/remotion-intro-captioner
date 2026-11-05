@@ -6,7 +6,7 @@ export const config: IntroConfig = {
   srt: "captions.srt",
   captionsJson: "captions.json",
   srtOffsetMs: 0,
-  maxDurationSec: 30,
+  maxDurationSec: 0, // 0 = no limit (render full video; positive number = cap in seconds)
   cueSource: "json",
 
   // Multi-look Director system

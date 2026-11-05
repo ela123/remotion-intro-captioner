@@ -36,7 +36,7 @@ function useAllFonts(): FontState {
       })
       .catch((err: unknown) => {
         const reason = err instanceof Error ? err.message : String(err);
-        const message = `Could not load fonts: ${reason}. Check internet connection.`;
+        const message = `Could not load fonts: ${reason}. Check local public/fonts folder.`;
         if (getRemotionEnvironment().isRendering) {
           cancelRender(new Error(message));
           return;

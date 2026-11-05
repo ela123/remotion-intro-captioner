@@ -291,7 +291,7 @@ export type IntroConfig = {
   srt: string;
   captionsJson?: string;
   srtOffsetMs: number;
-  maxDurationSec: number;
+  maxDurationSec?: number | null;
   cueSource: "srt" | "json";
   looks: LooksConfig;
   debug: boolean;
@@ -331,6 +331,7 @@ export type CaptionProps = {
   offsetY?: number;
   maxWordsPerLine?: number;
   maxLinesPerChunk?: number;
+  maxDurationSec?: number | null;
   cues: AnnotatedCue[];
   captionsDoc?: CaptionsDoc | null;
   error: string | null;

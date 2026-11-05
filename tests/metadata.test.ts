@@ -138,6 +138,21 @@ describe("calculateCaptionMetadata: source detection", () => {
     expect(result.props?.warnings).toContainEqual(expect.stringContaining("trimmed to maxDurationSec (30 s)"));
   });
 
+  it("does not trim video when maxDurationSec is 0 or disabled", async () => {
+    state.config.maxDurationSec = 0;
+    state.media.set(VIDEO, video(1920, 1080, 30, 35));
+    const result = await run();
+    expect(result.durationInFrames).toBe(1050);
+    expect(result.props?.warnings).not.toContainEqual(expect.stringContaining("trimmed to maxDurationSec"));
+  });
+
+  it("respects props.maxDurationSec over config.maxDurationSec", async () => {
+    state.config.maxDurationSec = 30;
+    state.media.set(VIDEO, video(1920, 1080, 30, 35));
+    const result = await run({ maxDurationSec: 0 } as any);
+    expect(result.durationInFrames).toBe(1050);
+  });
+
   it("parses the video once and never fetches it in full", async () => {
     await run();
     expect(state.parseCalls.filter((src) => src === VIDEO)).toHaveLength(1);

@@ -7,23 +7,24 @@ import { parseSrt } from "../src/srt/parse";
 import { wantsHelp } from "./lib/cli";
 
 const OUTPUT_PATH = path.join("public", ANNOTATED_CUES_FILE);
-const USAGE = `Usage: npm run analyze -- [--provider markers|llm]
+const USAGE = `Usage: npm run analyze:srt -- [--provider markers|ollama|llm]
 
 Annotates public/${config.srt} and writes ${OUTPUT_PATH} (used when cueSource is "json").
 
-  --provider <name>  markers: emphasis from *markers* in the SRT (default, or LLM_PROVIDER from .env)
-                     llm: not implemented yet
+  --provider <name>  markers: emphasis from *markers* in the SRT (default, 100% offline)
+                     ollama: local LLM at http://127.0.0.1:11434 (offline)
+                     llm: cloud provider (disabled when OFFLINE=1)
   -h, --help         show this help`;
 
-type Provider = "markers" | "llm";
+type Provider = "markers" | "ollama" | "llm";
 
 function isProvider(value: string | undefined): value is Provider {
-  return value === "markers" || value === "llm";
+  return value === "markers" || value === "ollama" || value === "llm";
 }
 
 function fail(message: string): never {
   console.error(`analyze: ${message}`);
-  console.error('Run "npm run analyze -- --help" for usage.');
+  console.error('Run "npm run analyze:srt -- --help" for usage.');
   process.exit(1);
 }
 
@@ -33,14 +34,20 @@ function readProviderFlag(argv: string[]): string | undefined {
     const arg = argv[i] ?? "";
     if (arg.startsWith("--provider=")) provider = arg.slice("--provider=".length);
     else if (arg === "--provider") provider = argv[++i] ?? fail("Missing value for --provider.");
-    else fail(`Unknown argument ${arg}.`);
+    else if (arg === "--offline") {
+      // offline flag accepted
+    } else fail(`Unknown argument ${arg}.`);
   }
   return provider;
 }
 
 function readProvider(argv: string[]): Provider {
+  const isOffline = process.env.OFFLINE === "1" || argv.includes("--offline");
   const requested = readProviderFlag(argv) ?? (process.env.LLM_PROVIDER || "markers");
-  if (!isProvider(requested)) fail(`Unknown provider "${requested}". Use "markers" or "llm".`);
+  if (!isProvider(requested)) fail(`Unknown provider "${requested}". Use "markers", "ollama", or "llm".`);
+  if (requested === "llm" && isOffline) {
+    fail(`Cloud LLM provider is disabled in offline mode (OFFLINE=1). Use --provider markers or --provider ollama.`);
+  }
   return requested;
 }
 
@@ -67,7 +74,7 @@ async function main(): Promise<void> {
     console.log(`Set cueSource: "json" in src/intro.config.ts to render from this file.`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`analyze: ${message}. Use --provider markers (emphasis from *markers* in the SRT) for now.`);
+    console.error(`analyze: ${message}.`);
     process.exit(1);
   }
 }

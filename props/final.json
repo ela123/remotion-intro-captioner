@@ -4,5 +4,6 @@
   "safeMargin": 0.08,
   "offsetY": 0,
   "maxWordsPerLine": 4,
-  "maxLinesPerChunk": 2
+  "maxLinesPerChunk": 2,
+  "maxDurationSec": 0
 }

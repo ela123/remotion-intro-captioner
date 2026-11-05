@@ -39,12 +39,14 @@ Arguments:
 Options:
   --model <name>      Whisper model to use: base.en | small.en | medium.en (default: small.en)
   --force             Overwrite existing public/captions.srt without asking
+  --offline           Never download: fail if whisper binary or model is missing
   -h, --help          Show this help message`;
 
 type CliOptions = {
   videoArg?: string;
   model: SupportedModel;
   force: boolean;
+  offline: boolean;
 };
 
 function parseArgs(argv: string[]): CliOptions {
@@ -52,6 +54,7 @@ function parseArgs(argv: string[]): CliOptions {
   let videoArg: string | undefined;
   let model: SupportedModel = "small.en";
   let force = false;
+  let offline = process.env.OFFLINE === "1";
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i] ?? "";
@@ -64,6 +67,8 @@ function parseArgs(argv: string[]): CliOptions {
       model = val as SupportedModel;
     } else if (a === "--force") {
       force = true;
+    } else if (a === "--offline") {
+      offline = true;
     } else if (!a.startsWith("--")) {
       if (!videoArg) {
         videoArg = a;
@@ -77,7 +82,7 @@ function parseArgs(argv: string[]): CliOptions {
     }
   }
 
-  return { videoArg, model, force };
+  return { videoArg, model, force, offline };
 }
 
 async function main(): Promise<void> {
@@ -87,7 +92,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { videoArg, model, force } = parseArgs(argv);
+  const { videoArg, model, force, offline } = parseArgs(argv);
 
   const publicDir = path.resolve("public");
   mkdirSync(publicDir, { recursive: true });
@@ -125,18 +130,18 @@ async function main(): Promise<void> {
   }
 
   // 2. Check video duration with Remotion's ffprobe
-  let maxDurationSec = 30;
+  let maxDurationSec = 0;
   try {
     if (typeof config?.maxDurationSec === "number" && config.maxDurationSec > 0) {
       maxDurationSec = config.maxDurationSec;
     }
   } catch {
-    maxDurationSec = 30;
+    maxDurationSec = 0;
   }
 
   try {
     const probe = await probeVideo(targetVideoPath);
-    if (probe.durationSec > maxDurationSec) {
+    if (maxDurationSec > 0 && probe.durationSec > maxDurationSec) {
       console.warn(
         `\n[WARNING] Video duration (${probe.durationSec.toFixed(1)}s) exceeds maxDurationSec (${maxDurationSec}s).` +
           ` Captions beyond this limit will not be rendered.`,
@@ -155,19 +160,42 @@ async function main(): Promise<void> {
 
     // 4. Install whisper.cpp and download model
     const whisperFolder = path.resolve("whisper.cpp");
-    console.log(`\nEnsuring whisper.cpp (v${WHISPER_VERSION}) is ready at ${whisperFolder}...`);
-    await installWhisperCpp({
-      to: whisperFolder,
-      version: WHISPER_VERSION,
-      printOutput: true,
-    });
+    const exeName = process.platform === "win32" ? "main.exe" : "main";
+    const exePath = path.join(whisperFolder, exeName);
+    const modelFileName = `ggml-${model}.bin`;
+    const modelFilePath = path.join(whisperFolder, modelFileName);
 
-    console.log(`\nEnsuring whisper model (${model}) is downloaded...`);
-    await downloadWhisperModel({
-      model: model as WhisperModel,
-      folder: whisperFolder,
-      printOutput: true,
-    });
+    if (existsSync(exePath)) {
+      console.log(`\nUsing local whisper.cpp executable at ${exePath}`);
+    } else {
+      if (offline) {
+        throw new Error(
+          `Offline: place ${exeName} in whisper.cpp/ (download once while online).`,
+        );
+      }
+      console.log(`\nEnsuring whisper.cpp (v${WHISPER_VERSION}) is ready at ${whisperFolder}...`);
+      await installWhisperCpp({
+        to: whisperFolder,
+        version: WHISPER_VERSION,
+        printOutput: true,
+      });
+    }
+
+    if (existsSync(modelFilePath)) {
+      console.log(`Using local whisper model (${model}) at ${modelFilePath}`);
+    } else {
+      if (offline) {
+        throw new Error(
+          `Offline: place ${modelFileName} in whisper.cpp/ (download once while online).`,
+        );
+      }
+      console.log(`\nEnsuring whisper model (${model}) is downloaded...`);
+      await downloadWhisperModel({
+        model: model as WhisperModel,
+        folder: whisperFolder,
+        printOutput: true,
+      });
+    }
 
     console.log(`\nTranscribing audio with whisper.cpp (${model})...`);
     const transcriptionResult = await transcribe({

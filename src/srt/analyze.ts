@@ -15,9 +15,27 @@ export const markersAnalyzer: CueAnalyzer = {
 
 export const llmAnalyzer: CueAnalyzer = {
   name: "llm",
-  analyze: () => Promise.reject(new Error("LLM provider not implemented yet")),
+  analyze: () => Promise.reject(new Error("LLM provider not implemented yet (requires internet or cloud API keys. Use --provider markers or --provider ollama for offline use.)")),
 };
 
-export function getAnalyzer(name: "markers" | "llm"): CueAnalyzer {
+export const ollamaAnalyzer: CueAnalyzer = {
+  name: "ollama",
+  analyze: async (cues) => {
+    try {
+      const res = await fetch("http://127.0.0.1:11434/api/tags");
+      if (!res.ok) {
+        throw new Error(`Ollama responded with HTTP ${res.status}`);
+      }
+    } catch (err) {
+      throw new Error(
+        `Ollama is not running locally at http://127.0.0.1:11434. Start Ollama with 'ollama serve'. (${(err as Error)?.message ?? err})`,
+      );
+    }
+    return annotateCues(cues);
+  },
+};
+
+export function getAnalyzer(name: "markers" | "llm" | "ollama"): CueAnalyzer {
+  if (name === "ollama") return ollamaAnalyzer;
   return name === "llm" ? llmAnalyzer : markersAnalyzer;
 }

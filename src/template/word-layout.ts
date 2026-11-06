@@ -36,7 +36,28 @@ export type PlacedWord = {
   lineIndex: number;
   wordIndexInLine: number;
   globalIndex: number;
+  heroIndex?: number;
+  accentIndex?: number;
+  normalIndex?: number;
 };
+
+export function isWordVisibleAtFrame(
+  word: PlacedWord,
+  frame: number,
+  fps: number,
+  chunkStartFrame: number,
+  chunkEndFrame: number,
+): boolean {
+  const wordStartFrame = Math.round(word.start * fps);
+  const chunkDuration = Math.max(1, chunkEndFrame - chunkStartFrame);
+  const defaultEntranceDur = word.role === "connector" ? 4 : 7;
+  const maxAvailableEntrance = Math.max(3, chunkDuration - 12);
+  const enterDuration = Math.min(defaultEntranceDur, maxAvailableEntrance);
+  const enterStart = Math.min(wordStartFrame - 2, chunkEndFrame - 6 - enterDuration);
+
+  // Render only when the word has reached its entrance frame and before chunk unmounts
+  return frame >= enterStart && frame <= chunkEndFrame + 4;
+}
 
 export type PlacedLine = {
   words: PlacedWord[];
@@ -94,6 +115,9 @@ export function computeChunkLayout(
     lineIndex: number;
     wordIndexInLine: number;
     globalIndex: number;
+    heroIndex?: number;
+    accentIndex?: number;
+    normalIndex?: number;
   };
 
   const rawLines: MeasuredRawWord[][] = [];
@@ -144,19 +168,26 @@ export function computeChunkLayout(
 
       // Assign entrance strictly by role
       let entrance: EntranceType;
+      let hIdx: number | undefined;
+      let aIdx: number | undefined;
+      let nIdx: number | undefined;
+
       if (word.entrance) {
         entrance = word.entrance as EntranceType;
+        if (role === "hero") hIdx = heroCount++;
+        else if (role === "accent") aIdx = accentCount++;
+        else if (role === "normal") nIdx = normalCount++;
       } else if (role === "hero") {
-        entrance = heroCount % 2 === 0 ? "sticker-slap" : "spin-pop";
-        heroCount++;
+        hIdx = heroCount++;
+        entrance = hIdx % 2 === 0 ? "sticker-slap" : "spin-pop";
       } else if (role === "accent") {
-        entrance = accentCount % 2 === 0 ? "jelly" : "drop-bounce";
-        accentCount++;
+        aIdx = accentCount++;
+        entrance = aIdx % 2 === 0 ? "jelly" : "drop-bounce";
       } else if (role === "connector") {
         entrance = "fade-pop";
       } else {
-        entrance = normalCount % 3 === 2 ? "wiggle-in" : "pop";
-        normalCount++;
+        nIdx = normalCount++;
+        entrance = nIdx % 3 === 2 ? "wiggle-in" : "pop";
       }
 
       // Fixed seeded resting rotation
@@ -212,6 +243,9 @@ export function computeChunkLayout(
         lineIndex: l,
         wordIndexInLine: w,
         globalIndex: globalWordIndex++,
+        heroIndex: hIdx,
+        accentIndex: aIdx,
+        normalIndex: nIdx,
       });
     }
 
@@ -321,6 +355,9 @@ export function computeChunkLayout(
         lineIndex: l,
         wordIndexInLine: w,
         globalIndex: mw.globalIndex,
+        heroIndex: mw.heroIndex,
+        accentIndex: mw.accentIndex,
+        normalIndex: mw.normalIndex,
       });
 
       currentWordX += mw.width + mw.spaceWidth;

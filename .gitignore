@@ -10,3 +10,6 @@ public/annotated-cues.json
 whisper.cpp/
 tmp-audio.wav
 public/words.json
+work/
+input/
+assets/

@@ -1,8 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import {
-  downloadWhisperModel,
-  installWhisperCpp,
   toCaptions,
   transcribe,
   type WhisperModel,
@@ -39,12 +37,14 @@ Arguments:
 Options:
   --model <name>      Whisper model to use: base.en | small.en | medium.en (default: small.en)
   --force             Overwrite existing public/captions.srt without asking
+  --offline           Never download: fail if whisper binary or model is missing
   -h, --help          Show this help message`;
 
 type CliOptions = {
   videoArg?: string;
   model: SupportedModel;
   force: boolean;
+  offline: boolean;
 };
 
 function parseArgs(argv: string[]): CliOptions {
@@ -52,6 +52,7 @@ function parseArgs(argv: string[]): CliOptions {
   let videoArg: string | undefined;
   let model: SupportedModel = "small.en";
   let force = false;
+  let offline = process.env.OFFLINE === "1";
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i] ?? "";
@@ -64,6 +65,8 @@ function parseArgs(argv: string[]): CliOptions {
       model = val as SupportedModel;
     } else if (a === "--force") {
       force = true;
+    } else if (a === "--offline") {
+      offline = true;
     } else if (!a.startsWith("--")) {
       if (!videoArg) {
         videoArg = a;
@@ -77,7 +80,7 @@ function parseArgs(argv: string[]): CliOptions {
     }
   }
 
-  return { videoArg, model, force };
+  return { videoArg, model, force, offline };
 }
 
 async function main(): Promise<void> {
@@ -87,7 +90,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { videoArg, model, force } = parseArgs(argv);
+  const { videoArg, model, force, offline } = parseArgs(argv);
 
   const publicDir = path.resolve("public");
   mkdirSync(publicDir, { recursive: true });
@@ -153,21 +156,65 @@ async function main(): Promise<void> {
     console.log(`\nExtracting 16 kHz mono audio to ${wavPath}...`);
     await run("ffmpeg", ["-y", "-i", targetVideoPath, "-ar", "16000", "-ac", "1", wavPath]);
 
-    // 4. Install whisper.cpp and download model
+    // 4. Resolve local whisper.cpp and transcription model
+    const exeName = process.platform === "win32" ? "main.exe" : "main";
     const whisperFolder = path.resolve("whisper.cpp");
-    console.log(`\nEnsuring whisper.cpp (v${WHISPER_VERSION}) is ready at ${whisperFolder}...`);
-    await installWhisperCpp({
-      to: whisperFolder,
-      version: WHISPER_VERSION,
-      printOutput: true,
-    });
+    const assetWhisperFolder = path.resolve("assets", "binaries", "whisper");
+    const assetModelsFolder = path.resolve("assets", "models");
+    const modelFileName = `ggml-${model}.bin`;
 
-    console.log(`\nEnsuring whisper model (${model}) is downloaded...`);
-    await downloadWhisperModel({
-      model: model as WhisperModel,
-      folder: whisperFolder,
-      printOutput: true,
-    });
+    // Check executable in assets/binaries/whisper or whisper.cpp
+    let finalExePath: string | null = null;
+    if (existsSync(path.join(assetWhisperFolder, exeName))) {
+      finalExePath = path.join(assetWhisperFolder, exeName);
+    } else if (existsSync(path.join(whisperFolder, exeName))) {
+      finalExePath = path.join(whisperFolder, exeName);
+    }
+
+    if (!finalExePath) {
+      throw new Error(
+        `Local whisper executable (${exeName}) not found.\n` +
+          `Expected at "${path.join(assetWhisperFolder, exeName)}" or "${path.join(whisperFolder, exeName)}".\n` +
+          `Run "npm run offline:setup" while online to prepare local assets.`
+      );
+    }
+    console.log(`\nUsing local whisper.cpp executable at ${finalExePath}`);
+
+    // Ensure executable exists in whisperFolder for transcribe() runner if needed
+    if (!existsSync(path.join(whisperFolder, exeName))) {
+      mkdirSync(whisperFolder, { recursive: true });
+      copyFileSync(finalExePath, path.join(whisperFolder, exeName));
+      // Also copy dlls if present
+      for (const dll of ["whisper.dll", "SDL2.dll"]) {
+        const srcDll = path.join(path.dirname(finalExePath), dll);
+        if (existsSync(srcDll) && !existsSync(path.join(whisperFolder, dll))) {
+          copyFileSync(srcDll, path.join(whisperFolder, dll));
+        }
+      }
+    }
+
+    // Check model in assets/models or whisper.cpp
+    let finalModelPath: string | null = null;
+    if (existsSync(path.join(assetModelsFolder, modelFileName))) {
+      finalModelPath = path.join(assetModelsFolder, modelFileName);
+    } else if (existsSync(path.join(whisperFolder, modelFileName))) {
+      finalModelPath = path.join(whisperFolder, modelFileName);
+    }
+
+    if (!finalModelPath) {
+      throw new Error(
+        `Local whisper model (${modelFileName}) not found.\n` +
+          `Expected at "${path.join(assetModelsFolder, modelFileName)}" or "${path.join(whisperFolder, modelFileName)}".\n` +
+          `Run "npm run offline:setup" while online to download and cache local models.`
+      );
+    }
+    console.log(`Using local whisper model (${model}) at ${finalModelPath}`);
+
+    // Ensure model exists in whisperFolder for transcribe() runner
+    if (!existsSync(path.join(whisperFolder, modelFileName))) {
+      mkdirSync(whisperFolder, { recursive: true });
+      copyFileSync(finalModelPath, path.join(whisperFolder, modelFileName));
+    }
 
     console.log(`\nTranscribing audio with whisper.cpp (${model})...`);
     const transcriptionResult = await transcribe({

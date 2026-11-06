@@ -153,22 +153,27 @@ export const PopGraphics: React.FC<PopGraphicsProps> = ({
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {/* Halftone Dot Blob */}
+      {/* Halftone Dot Blob using fast native SVG pattern without expensive mask-image */}
       <div
         style={{
           position: "absolute",
           left: `${blobX}px`,
           top: `${blobY}px`,
-          width: `${300 * unit}px`,
-          height: `${300 * unit}px`,
-          backgroundImage: `radial-gradient(${blobColor} 20%, transparent 22%)`,
-          backgroundSize: `${16 * unit}px ${16 * unit}px`,
-          WebkitMaskImage: "radial-gradient(circle, black 30%, transparent 70%)",
-          maskImage: "radial-gradient(circle, black 30%, transparent 70%)",
+          width: `${260 * unit}px`,
+          height: `${260 * unit}px`,
           opacity: 0.18,
           zIndex: 0,
         }}
-      />
+      >
+        <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%" }}>
+          <defs>
+            <pattern id={`pop-dots-${startFrame}`} width="16" height="16" patternUnits="userSpaceOnUse">
+              <circle cx="8" cy="8" r="3" fill={blobColor} />
+            </pattern>
+          </defs>
+          <circle cx="50" cy="50" r="46" fill={`url(#pop-dots-${startFrame})`} />
+        </svg>
+      </div>
 
       {/* Comic Explosion Burst behind Hero words */}
       {heroWords.map((hw, hIdx) => {
@@ -323,20 +328,7 @@ export const PopGraphics: React.FC<PopGraphicsProps> = ({
           );
         })}
 
-      {/* Final Quality Halftone Overlay (6% opacity) */}
-      {quality === "final" && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: `radial-gradient(${ink} 15%, transparent 16%)`,
-            backgroundSize: `${6 * unit}px ${6 * unit}px`,
-            opacity: 0.06,
-            pointerEvents: "none",
-            zIndex: 20,
-          }}
-        />
-      )}
+
     </div>
   );
 };

@@ -59,6 +59,8 @@ export const calculateCaptionMetadata: CalculateMetadataFunction<CaptionProps> =
         error: null,
         warnings,
         hasProxy: proxy.hasProxy,
+        transparentBackground: props.transparentBackground ?? (config as any).transparentBackground ?? false,
+        hideBackground: props.hideBackground ?? (config as any).hideBackground ?? false,
       },
     };
   } catch (err) {

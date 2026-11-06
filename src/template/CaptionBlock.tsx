@@ -9,7 +9,7 @@ import { computeJustifiedPosterScales } from "../looks/poster/layout-adapter";
 import { seededFloat } from "../utils/prng";
 import type { LookId, Quality, StyleTokens } from "../types";
 import { WordLayer } from "./WordLayer";
-import type { ChunkLayout, PlacedWord } from "./word-layout";
+import { isWordVisibleAtFrame, type ChunkLayout, type PlacedWord } from "./word-layout";
 
 type CaptionBlockProps = {
   chunkLayout: ChunkLayout;
@@ -152,11 +152,6 @@ export const CaptionBlock: React.FC<CaptionBlockProps> = ({
   // Poster bar-wipe exit progress
   const posterExit = lookId === "poster" && isExiting ? getPosterExit(frame, exitStart) : null;
 
-  let globalWordCounter = 0;
-  let heroCounter = 0;
-  let accentCounter = 0;
-  let normalCounter = 0;
-
   return (
     <div
       style={{
@@ -219,6 +214,12 @@ export const CaptionBlock: React.FC<CaptionBlockProps> = ({
         }}
       >
         {chunkLayout.lines.map((line, lIdx) => {
+          // Render only caption words visible at the current frame
+          const visibleWords = line.words.filter((word) =>
+            isWordVisibleAtFrame(word, frame, fps, startFrame, endFrame)
+          );
+          if (visibleWords.length === 0) return null;
+
           // Line Exit Calculation
           let lineExitScale = 1;
           let lineExitRot = 0;
@@ -264,11 +265,11 @@ export const CaptionBlock: React.FC<CaptionBlockProps> = ({
                 opacity: lineExitOpacity,
               }}
             >
-              {line.words.map((word) => {
-                const wIdx = globalWordCounter++;
-                const hIdx = word.role === "hero" ? heroCounter++ : 0;
-                const aIdx = word.role === "accent" ? accentCounter++ : 0;
-                const nIdx = word.role === "normal" ? normalCounter++ : 0;
+              {visibleWords.map((word) => {
+                const wIdx = word.globalIndex;
+                const hIdx = word.heroIndex ?? 0;
+                const aIdx = word.accentIndex ?? 0;
+                const nIdx = word.normalIndex ?? 0;
 
                 return (
                   <WordLayer

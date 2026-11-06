@@ -1,0 +1,10 @@
+{
+  "quality": "final",
+  "style": "pop",
+  "safeMargin": 0.08,
+  "offsetY": 0,
+  "maxWordsPerLine": 4,
+  "maxLinesPerChunk": 2,
+  "transparentBackground": true,
+  "hideBackground": true
+}

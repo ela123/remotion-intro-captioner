@@ -23,31 +23,45 @@ import { computeChunkLayout, type ChunkLayout } from "./word-layout";
 
 type FontState = { ready: boolean; error: string | null };
 
+let fontsLoadedGlobally = false;
+
 function useAllFonts(): FontState {
-  const [handle] = useState(() => delayRender("Loading project fonts for all looks"));
-  const [state, setState] = useState<FontState>({ ready: false, error: null });
+  const isInitiallyReady =
+    fontsLoadedGlobally || (typeof document !== "undefined" && document.fonts?.status === "loaded");
+
+  const [state, setState] = useState<FontState>(() => ({
+    ready: isInitiallyReady,
+    error: null,
+  }));
+
+  const [handle] = useState<number | null>(() => {
+    if (isInitiallyReady) return null;
+    return delayRender("Loading project fonts for all looks");
+  });
 
   useEffect(() => {
+    if (state.ready && handle === null) return;
     let active = true;
     loadAllProjectFonts()
       .then(() => {
+        fontsLoadedGlobally = true;
         if (active) setState({ ready: true, error: null });
-        continueRender(handle);
+        if (handle !== null) continueRender(handle);
       })
       .catch((err: unknown) => {
         const reason = err instanceof Error ? err.message : String(err);
-        const message = `Could not load fonts: ${reason}. Check internet connection.`;
+        const message = `Could not load fonts: ${reason}. Check local public/fonts folder.`;
         if (getRemotionEnvironment().isRendering) {
           cancelRender(new Error(message));
           return;
         }
         if (active) setState({ ready: false, error: message });
-        continueRender(handle);
+        if (handle !== null) continueRender(handle);
       });
     return () => {
       active = false;
     };
-  }, [handle]);
+  }, [handle, state.ready]);
 
   return state;
 }
@@ -120,6 +134,8 @@ const Captions: React.FC<CaptionProps> = ({
   offsetY = 0,
   maxWordsPerLine = 4,
   maxLinesPerChunk = 2,
+  transparentBackground = false,
+  hideBackground = false,
 }) => {
   const frame = useCurrentFrame();
   const { width, height, fps } = useVideoConfig();
@@ -128,8 +144,18 @@ const Captions: React.FC<CaptionProps> = ({
 
   const fonts = useAllFonts();
 
-  // Convert cues to document if captionsDoc is not directly provided
+  // Convert cues or parse captionsDoc once with useMemo
   const doc: CaptionsDoc = useMemo(() => {
+    if (typeof captionsDoc === "string") {
+      try {
+        const parsed = JSON.parse(captionsDoc);
+        if (parsed && Array.isArray(parsed.chunks) && parsed.chunks.length > 0) {
+          return parsed;
+        }
+      } catch {
+        // Fallback to cuesToDoc
+      }
+    }
     if (captionsDoc && captionsDoc.chunks && captionsDoc.chunks.length > 0) {
       return captionsDoc;
     }
@@ -142,7 +168,7 @@ const Captions: React.FC<CaptionProps> = ({
     return computeLookPlan(doc.chunks, looksConfig);
   }, [doc.chunks, looksConfig]);
 
-  // Pre-compute chunk layouts with per-look font metrics
+  // Pre-compute chunk layouts with per-look font metrics once
   const chunkLayouts = useMemo((): ChunkLayout[] | null => {
     if (!fonts.ready) return null;
     return doc.chunks.map((chunk, i) => {
@@ -161,12 +187,19 @@ const Captions: React.FC<CaptionProps> = ({
   }, [fonts.ready, doc, lookPlan, frameSize, safeMargin, offsetY, unit, fps]);
 
   const isDebug = debugProp ?? config.debug ?? false;
+  const isTransparent =
+    transparentBackground || hideBackground || (config as any).transparentBackground || false;
 
   if (fonts.error) return <ErrorScreen message={fonts.error} warnings={warnings} />;
 
   return (
-    <AbsoluteFill style={{ overflow: "hidden", backgroundColor: POP_PALETTE.ink }}>
-      <Background quality={quality} hasProxy={hasProxy} />
+    <AbsoluteFill
+      style={{
+        overflow: "hidden",
+        backgroundColor: isTransparent ? "transparent" : POP_PALETTE.ink,
+      }}
+    >
+      {!isTransparent && <Background quality={quality} hasProxy={hasProxy} />}
 
       {chunkLayouts
         ? chunkLayouts.map((layout, i) => {

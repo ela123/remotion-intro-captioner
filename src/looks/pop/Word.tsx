@@ -1,10 +1,9 @@
 import React from "react";
+import { interpolate, spring } from "remotion";
 import { fontFamilyCss } from "../../styles/fonts";
-import { backOut, expoOut } from "../../utils/ease";
-import { seededChoice, seededFloat } from "../../utils/prng";
 import { POP_PALETTE, POP_TOKENS } from "./preset";
-import type { Quality, WordRole } from "../../types";
-import type { PlacedWord } from "../../template/word-layout";
+import type { Quality } from "../../types";
+import { isWordVisibleAtFrame, type PlacedWord } from "../../template/word-layout";
 
 type PopWordProps = {
   word: PlacedWord;
@@ -53,16 +52,19 @@ export const PopWord: React.FC<PopWordProps> = ({
   const enterDuration = Math.min(defaultEntranceDur, maxAvailableEntrance);
   const enterStart = Math.min(wordStartFrame - 2, chunkEndFrame - 6 - enterDuration);
 
-  if (frame < enterStart) return null;
+  // Render only if currently visible
+  if (!isWordVisibleAtFrame(word, frame, fps, chunkStartFrame, chunkEndFrame)) {
+    return null;
+  }
 
-  const rawEnterProg = clamp01((frame - enterStart) / enterDuration);
+  const enterFrame = Math.max(0, frame - enterStart);
   const isSpoken = frame >= wordStartFrame && frame <= wordEndFrame + 2;
   const spokenProg = clamp01((frame - wordStartFrame) / spokenDuration);
 
   // Quantized frame on twos for hand-made feel
   const twosFrame = Math.floor(frame / 2) * 2;
 
-  // 1. Entrance by Role
+  // 1. Entrance by Role using spring() and interpolate() on transform and opacity
   let enterScaleX = 1;
   let enterScaleY = 1;
   let enterRotOffset = 0;
@@ -72,77 +74,88 @@ export const PopWord: React.FC<PopWordProps> = ({
   if (word.role === "hero") {
     const isSpin = heroIndexInChunk % 2 === 1;
     if (isSpin) {
-      // spin-pop: rotate -180 -> 0, scale 0 -> 1.1 -> 1.0
-      const spr = backOut(1.4)(rawEnterProg);
-      enterScaleX = spr;
-      enterScaleY = spr;
-      enterRotOffset = (1 - rawEnterProg) * -180;
+      // spin-pop: rotate -180 -> 0, scale 0 -> 1.0
+      const spinSpring = spring({
+        frame: enterFrame,
+        fps,
+        config: { damping: 11, stiffness: 180, mass: 0.8 },
+      });
+      enterScaleX = spinSpring;
+      enterScaleY = spinSpring;
+      enterRotOffset = interpolate(enterFrame, [0, enterDuration], [-180, 0], {
+        extrapolateRight: "clamp",
+        extrapolateLeft: "clamp",
+      });
     } else {
-      // sticker-slap: scale 1.8 -> 1.0, 6deg rotation snap, overshoot to 0.92, settle
-      if (rawEnterProg < 0.6) {
-        const t = rawEnterProg / 0.6;
-        const s = 1.8 - t * 0.88;
-        enterScaleX = s;
-        enterScaleY = s;
-        enterRotOffset = (1 - t) * 6 * energy;
-      } else {
-        const t = (rawEnterProg - 0.6) / 0.4;
-        const s = 0.92 + t * 0.08;
-        enterScaleX = s;
-        enterScaleY = s;
-        enterRotOffset = 0;
-      }
+      // sticker-slap: scale 1.8 -> 1.0, rotation snap, settle
+      const slapSpring = spring({
+        frame: enterFrame,
+        fps,
+        config: { damping: 12, stiffness: 220, mass: 0.9 },
+      });
+      enterScaleX = interpolate(slapSpring, [0, 1], [1.8, 1]);
+      enterScaleY = enterScaleX;
+      enterRotOffset = interpolate(enterFrame, [0, Math.max(1, enterDuration * 0.6)], [6 * energy, 0], {
+        extrapolateRight: "clamp",
+        extrapolateLeft: "clamp",
+      });
     }
   } else if (word.role === "accent") {
     const isBounce = accentIndexInChunk % 2 === 1;
     if (isBounce) {
-      // drop-bounce: falls from -60px * unit, bounces twice
-      if (rawEnterProg < 0.5) {
-        const t = rawEnterProg / 0.5;
-        enterTransY = -60 * unit * (1 - t * t);
-      } else if (rawEnterProg < 0.8) {
-        const t = (rawEnterProg - 0.5) / 0.3;
-        enterTransY = -Math.sin(t * Math.PI) * 16 * unit;
-      } else {
-        const t = (rawEnterProg - 0.8) / 0.2;
-        enterTransY = -Math.sin(t * Math.PI) * 6 * unit;
-      }
+      // drop-bounce: falls from -60px * unit, bounces into place
+      const bounceSpring = spring({
+        frame: enterFrame,
+        fps,
+        config: { damping: 8, stiffness: 160, mass: 0.7 },
+      });
+      enterTransY = interpolate(bounceSpring, [0, 1], [-60 * unit, 0]);
     } else {
-      // jelly: scaleX 1.3/scaleY 0.7 -> 0.9/1.15 -> 1.0
-      if (rawEnterProg < 0.5) {
-        const t = rawEnterProg / 0.5;
-        enterScaleX = 1.3 - t * 0.4;
-        enterScaleY = 0.7 + t * 0.45;
-      } else {
-        const t = (rawEnterProg - 0.5) / 0.5;
-        enterScaleX = 0.9 + t * 0.1;
-        enterScaleY = 1.15 - t * 0.15;
-      }
+      // jelly: squash-and-stretch settle
+      const jellySpring = spring({
+        frame: enterFrame,
+        fps,
+        config: { damping: 9, stiffness: 190, mass: 0.8 },
+      });
+      enterScaleX = interpolate(jellySpring, [0, 0.5, 1], [1.3, 0.9, 1]);
+      enterScaleY = interpolate(jellySpring, [0, 0.5, 1], [0.7, 1.15, 1]);
     }
   } else if (word.role === "connector") {
     // fade-pop (4 frames)
-    enterOpacity = rawEnterProg * 0.9;
-    if (rawEnterProg < 0.5) {
-      const t = rawEnterProg / 0.5;
-      enterScaleX = 0.6 + t * 0.06;
-      enterScaleY = enterScaleX;
-    } else {
-      const t = (rawEnterProg - 0.5) / 0.5;
-      enterScaleX = 0.66 - t * 0.06;
-      enterScaleY = enterScaleX;
-    }
+    const connSpring = spring({
+      frame: enterFrame,
+      fps,
+      config: { damping: 14, stiffness: 200 },
+    });
+    enterOpacity = interpolate(enterFrame, [0, enterDuration], [0, word.opacity * 0.9], {
+      extrapolateRight: "clamp",
+      extrapolateLeft: "clamp",
+    });
+    enterScaleX = interpolate(connSpring, [0, 1], [0.6, 0.66]);
+    enterScaleY = enterScaleX;
   } else {
     // normal: pop, or every 3rd normal is wiggle-in
     const isWiggle = normalIndexInChunk % 3 === 2;
     if (isWiggle) {
-      const spr = expoOut(rawEnterProg);
-      enterScaleX = spr;
-      enterScaleY = spr;
-      enterRotOffset = Math.sin(rawEnterProg * Math.PI * 4) * 6 * (1 - rawEnterProg);
+      const wiggleSpring = spring({
+        frame: enterFrame,
+        fps,
+        config: { damping: 12, stiffness: 180 },
+      });
+      enterScaleX = wiggleSpring;
+      enterScaleY = wiggleSpring;
+      enterRotOffset = interpolate(enterFrame, [0, enterDuration * 0.5, enterDuration], [0, 6 * energy, 0], {
+        extrapolateRight: "clamp",
+        extrapolateLeft: "clamp",
+      });
     } else {
-      const spr = backOut(1.4)(rawEnterProg);
-      enterScaleX = spr;
-      enterScaleY = spr;
+      const popSpring = spring({
+        frame: enterFrame,
+        fps,
+        config: { damping: 10, stiffness: 190, mass: 0.8 },
+      });
+      enterScaleX = popSpring;
+      enterScaleY = popSpring;
     }
   }
 
@@ -173,20 +186,14 @@ export const PopWord: React.FC<PopWordProps> = ({
       const decay = 1 - spokenProg;
       empRot = Math.sin((twosFrame - wordStartFrame) * 0.9) * 4 * decay * energy;
     } else if (accentType === 1) {
-      // squash-bounce
-      if (spokenProg < 0.3) {
-        const t = spokenProg / 0.3;
-        empScaleX = 1.0 + t * 0.18;
-        empScaleY = 1.0 - t * 0.12;
-      } else if (spokenProg < 0.7) {
-        const t = (spokenProg - 0.3) / 0.4;
-        empScaleX = 1.18 - t * 0.23;
-        empScaleY = 0.88 + t * 0.18;
-      } else {
-        const t = (spokenProg - 0.7) / 0.3;
-        empScaleX = 0.95 + t * 0.05;
-        empScaleY = 1.06 - t * 0.06;
-      }
+      // squash-bounce using spring
+      const squashSpring = spring({
+        frame: Math.max(0, frame - wordStartFrame),
+        fps,
+        config: { damping: 9, stiffness: 170 },
+      });
+      empScaleX = interpolate(squashSpring, [0, 0.3, 0.7, 1], [1.0, 1.18, 0.95, 1.0]);
+      empScaleY = interpolate(squashSpring, [0, 0.3, 0.7, 1], [1.0, 0.88, 1.06, 1.0]);
     }
   }
 
@@ -229,7 +236,7 @@ export const PopWord: React.FC<PopWordProps> = ({
         zIndex: word.role === "hero" ? 10 : word.role === "accent" ? 5 : 1,
       }}
     >
-      {/* Hero Sticker Backing */}
+      {/* Hero Sticker Backing with crisp zero-blur hard shadow (no expensive filter) */}
       {word.role === "hero" && (
         <div
           style={{
@@ -239,7 +246,7 @@ export const PopWord: React.FC<PopWordProps> = ({
             borderRadius: `${16 * unit}px`,
             border: `${Math.max(2, 4 * unit)}px solid ${ink}`,
             transform: `rotate(${word.stickerRotation.toFixed(1)}deg)`,
-            filter: POP_TOKENS.dropShadow,
+            boxShadow: `${Math.round(3 * unit)}px ${Math.round(4 * unit)}px 0 ${ink}`,
             zIndex: -1,
           }}
         />
@@ -261,7 +268,7 @@ export const PopWord: React.FC<PopWordProps> = ({
         />
       )}
 
-      {/* Text Element */}
+      {/* Text Element with WebkitTextStroke outline (no expensive filter) */}
       <span
         style={{
           position: "relative",
@@ -275,7 +282,6 @@ export const PopWord: React.FC<PopWordProps> = ({
           textTransform: word.uppercase ? "uppercase" : "none",
           WebkitTextStroke: `${POP_TOKENS.strokeWidthEm}em ${ink}`,
           paintOrder: "stroke fill",
-          filter: word.role === "hero" ? undefined : POP_TOKENS.dropShadow,
           lineHeight: 1,
           whiteSpace: "pre",
         }}

@@ -31,8 +31,11 @@ npm run render
 
 ## Commands
 
-| Command | What it does |
-|---------|--------------|
+| `npm run offline:setup` | One-time preparation: bundle all fonts, models, binaries, and generate manifest |
+| `npm run offline:check` | Verify 100% offline readiness and render offline test still frame |
+| `npm run batch` | Batch-process all videos in `input/` → `out/` (transcribe + analyze + render each) |
+| `npm run batch:force-render` | Re-render all videos using existing `work/` files (skip transcription) |
+| `npm run batch:force-all` | Redo everything from scratch for all videos |
 | `npm run transcribe` | Extract audio → transcribe with local whisper.cpp → write `public/captions.srt` & `words.json` |
 | `npm run auto` | Full end-to-end pipeline: `transcribe` → `srt:fit` → `analyze` |
 | `npm run dev` | Open Remotion Studio (hot-reload) |
@@ -82,6 +85,135 @@ After transcription:
 1. Open and review `public/captions.srt` to tweak any wording or cue breaks.
 2. Run `npm run analyze` to compute exact word alignments and assign kinetic typography animations into `public/captions.json`.
 3. Preview with `npm run dev` or render with `npm run preview`.
+
+---
+
+## Batch Processing (multiple videos)
+
+Process every video in a folder in one command — transcribe, analyze, and render each to its own output file.
+
+### Quick start
+
+```bash
+# 1. Create the input folder and drop your videos in
+mkdir input
+# copy my-clip.mp4, "another clip.mp4", etc. into input/
+
+# 2. Run the batch
+npm run batch
+
+# Results:
+#   out/my-clip.mp4
+#   out/another_clip.mp4   (spaces → underscores in stem)
+#   work/<stem>/           intermediate files (SRT, words.json, captions.json, log.txt)
+```
+
+### How it works
+
+```
+input/<name>.mp4
+  ↓  ffprobe probe
+  ↓  whisper.cpp transcription  →  work/<stem>/captions.srt + words.json
+  ↓  heuristic analyze          →  work/<stem>/captions.json
+  ↓  stage per-video public dir →  work/<stem>/public/  (hard-linked video + captions.json)
+  ↓  remotion render --public-dir=work/<stem>/public/
+out/<stem>.mp4
+```
+
+Each video gets its own isolated working folder and its own Remotion `--public-dir`, so runs never overwrite each other. The existing `public/`, `npm run render`, and `npm run dev` workflow are completely unchanged.
+
+### Folder layout
+
+```
+remotion-intro-captioner/
+├── input/
+│   ├── clip-a.mp4
+│   ├── clip-b.mp4
+│   └── clip-b.override.json     ← optional per-video config
+├── work/
+│   ├── clip-a/
+│   │   ├── words.json
+│   │   ├── captions.srt
+│   │   ├── captions.json
+│   │   ├── props.json           ← merged render props
+│   │   ├── meta.json            ← source size+mtime for resume detection
+│   │   ├── log.txt              ← full per-video log
+│   │   └── public/              ← per-video public dir for Remotion
+│   │       ├── intro.mp4        ← hard link to input video (fallback: copy)
+│   │       └── captions.json
+│   └── clip-b/
+│       └── ...
+├── out/
+│   ├── clip-a.mp4
+│   └── clip-b.mp4
+└── public/                      ← untouched; used only by npm run dev / render
+```
+
+### CLI reference
+
+```
+npm run batch [-- [input-dir] [options]]
+
+Arguments:
+  input-dir              folder with video files  (default: input/)
+
+Options:
+  --force-render         re-render even if out/<stem>.mp4 already exists
+                         (reuses existing work/<stem>/captions.json)
+  --force-all            redo everything from scratch (re-transcribe + re-analyze + re-render)
+  --model <name>         whisper model: base.en | small.en | medium.en  (default: small.en)
+  --concurrency <n>      max parallel renders  (default: 1)
+                         Transcription is always sequential regardless of this value.
+  -h, --help             show help
+```
+
+### Resume support
+
+The batch automatically skips videos that are already done:
+- **Skipped** if `out/<stem>.mp4` exists AND `work/<stem>/meta.json` records the same file size and mtime as the current source. This means editing the source file triggers a full re-run.
+- `--force-render` re-renders using cached `captions.json` (skips slow transcription).
+- `--force-all` retranscribes and re-analyzes everything.
+
+### Per-video config overlay
+
+Place `<stem>.override.json` next to the video in the input folder:
+
+```json
+{
+  "style": "editorial",
+  "energy": 0.7,
+  "maxWordsPerLine": 3,
+  "maxLinesPerChunk": 2,
+  "srtOffsetMs": -200
+}
+```
+
+Valid keys: `looks`, `style`, `energy`, `maxWordsPerLine`, `maxLinesPerChunk`, `srtOffsetMs`, `debug`, `quality`.
+Unknown keys produce a warning and are silently ignored — the batch never crashes on a bad override.
+
+### Concurrency
+
+| Stage | Behaviour |
+|---|---|
+| Transcription (whisper.cpp) | Always sequential — it's CPU-bound and uses all cores internally |
+| Rendering (Remotion) | Controlled by `--concurrency` (default 1) |
+
+Recommended settings:
+- **16 GB RAM**: `--concurrency 1` (default) — one Chromium instance at a time
+- **32 GB RAM**: `--concurrency 2` — safe, cuts wall-clock render time roughly in half
+
+### Error handling
+
+- One failure never stops the rest of the batch.
+- Each video has its own `work/<stem>/log.txt` with a full trace.
+- The summary at the end shows `[DONE]`, `[SKIP]`, or `[FAIL]` with the log path for failures.
+- Leftover `.tmp.mp4` files from previous crashed runs are cleaned up at startup.
+
+### Stem collision detection
+
+If two files in the input folder would produce the same sanitized stem
+(e.g. `my video.mp4` and `my_video.mp4` both become `my_video`), the second one
+is immediately failed with a clear message. No silent overwrites.
 
 ---
 

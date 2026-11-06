@@ -21,6 +21,8 @@ const defaultProps: CaptionProps = {
   error: null,
   warnings: [],
   hasProxy: false,
+  transparentBackground: false,
+  hideBackground: false,
 };
 
 export const RemotionRoot: React.FC = () => (

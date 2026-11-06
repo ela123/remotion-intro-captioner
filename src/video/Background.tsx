@@ -3,7 +3,12 @@ import { AbsoluteFill, OffthreadVideo, staticFile } from "remotion";
 import { config } from "../intro.config";
 import type { Quality } from "../types";
 
-export const Background: React.FC<{ quality: Quality; hasProxy: boolean }> = ({ quality, hasProxy }) => {
+export const Background: React.FC<{ quality: Quality; hasProxy: boolean; hidden?: boolean }> = ({
+  quality,
+  hasProxy,
+  hidden = false,
+}) => {
+  if (hidden) return null;
   const file = quality === "preview" && hasProxy ? config.proxyVideo : config.video;
   return (
     <AbsoluteFill>

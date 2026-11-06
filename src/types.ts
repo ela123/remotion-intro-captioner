@@ -21,7 +21,13 @@ export type FontFamily =
   | "Fraunces"
   | "DM Sans"
   | "Anton"
-  | "Space Mono";
+  | "Space Mono"
+  | "Montserrat"
+  | "Poppins"
+  | "Inter"
+  | "Space Grotesk"
+  | "JetBrains Mono"
+  | "Playfair Display";
 
 export type DeepPartial<T> = {
   [K in keyof T]?: T[K] extends (infer U)[]
@@ -320,6 +326,8 @@ export type IntroConfig = {
   drift: boolean;
   outputScale: number;
   render: { concurrency: number };
+  transparentBackground?: boolean;
+  hideBackground?: boolean;
 };
 
 export type CaptionProps = {
@@ -336,4 +344,6 @@ export type CaptionProps = {
   error: string | null;
   warnings: string[];
   hasProxy: boolean;
+  transparentBackground?: boolean;
+  hideBackground?: boolean;
 };

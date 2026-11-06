@@ -140,7 +140,7 @@ export const PosterGraphics: React.FC<PosterGraphicsProps> = ({
             height: `${14 * unit}px`,
             backgroundColor: "rgba(242, 240, 235, 0.4)",
             transform: "rotate(-18deg)",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
+            boxShadow: "0 1px 0 rgba(0,0,0,0.4)",
             zIndex: 12,
           }}
         />

@@ -30,6 +30,25 @@ type CaptionBlockProps = {
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 
+function getWordEnterStart(
+  word: PlacedWord,
+  fps: number,
+  startFrame: number,
+  endFrame: number,
+  lookId: LookId,
+): number {
+  const wordStartFrame = Math.round(word.start * fps);
+  if (lookId === "poster") {
+    return word.role === "hero" ? Math.max(startFrame, wordStartFrame - 2) : wordStartFrame;
+  }
+  const chunkDuration = Math.max(1, endFrame - startFrame);
+  const defaultEntranceDur =
+    word.role === "connector" ? 4 : lookId === "editorial" && word.role === "hero" ? 8 : 7;
+  const maxAvailableEntrance = Math.max(3, chunkDuration - 12);
+  const enterDuration = Math.min(defaultEntranceDur, maxAvailableEntrance);
+  return Math.min(wordStartFrame - 2, endFrame - 6 - enterDuration);
+}
+
 export const CaptionBlock: React.FC<CaptionBlockProps> = ({
   chunkLayout,
   frame,
@@ -269,6 +288,9 @@ export const CaptionBlock: React.FC<CaptionBlockProps> = ({
                 const hIdx = word.role === "hero" ? heroCounter++ : 0;
                 const aIdx = word.role === "accent" ? accentCounter++ : 0;
                 const nIdx = word.role === "normal" ? normalCounter++ : 0;
+
+                const enterStart = getWordEnterStart(word, fps, startFrame, endFrame, lookId);
+                if (frame < enterStart) return null;
 
                 return (
                   <WordLayer

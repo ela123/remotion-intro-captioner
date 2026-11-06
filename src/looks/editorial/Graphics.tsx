@@ -44,18 +44,28 @@ export const EditorialGraphics: React.FC<EditorialGraphicsProps> = ({
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {/* Soft Bottom Readability Gradient (ink, 0 -> 40% opacity) */}
-      <div
+      {/* Soft Bottom Readability Gradient via Simple SVG */}
+      <svg
         style={{
           position: "absolute",
           left: 0,
           right: 0,
           bottom: 0,
+          width: "100%",
           height: "45%",
-          background: "linear-gradient(to top, rgba(17, 17, 17, 0.42) 0%, rgba(17, 17, 17, 0) 100%)",
           zIndex: 0,
         }}
-      />
+        preserveAspectRatio="none"
+        viewBox="0 0 100 100"
+      >
+        <defs>
+          <linearGradient id="editorial-readability-grad" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor="#111111" stopOpacity="0.42" />
+            <stop offset="100%" stopColor="#111111" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <rect width="100" height="100" fill="url(#editorial-readability-grad)" />
+      </svg>
 
       {/* Elegant Hairline Rule Above the Block */}
       <div

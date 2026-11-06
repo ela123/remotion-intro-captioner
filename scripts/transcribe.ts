@@ -37,7 +37,7 @@ Arguments:
                       If omitted, uses existing public/intro.mp4.
 
 Options:
-  --model <name>      Whisper model to use: base.en | small.en | medium.en (default: small.en)
+  --model <name>      Whisper model to use: base.en | small.en | medium.en (default: base.en)
   --force             Overwrite existing public/captions.srt without asking
   --offline           Never download: fail if whisper binary or model is missing
   -h, --help          Show this help message`;
@@ -52,7 +52,7 @@ type CliOptions = {
 function parseArgs(argv: string[]): CliOptions {
   const args = splitInlineValues(argv);
   let videoArg: string | undefined;
-  let model: SupportedModel = "small.en";
+  let model: SupportedModel = "base.en";
   let force = false;
   let offline = process.env.OFFLINE === "1";
 

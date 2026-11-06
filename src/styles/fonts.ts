@@ -124,9 +124,19 @@ export const FAMILIES: Record<
 };
 
 let fontLoadingPromise: Promise<void> | null = null;
+let fontsLoadedSync = false;
+
+export function isFontsLoaded(): boolean {
+  if (typeof document === "undefined") return true;
+  return fontsLoadedSync;
+}
 
 export async function loadAllProjectFonts(): Promise<void> {
-  if (typeof document === "undefined") return;
+  if (typeof document === "undefined") {
+    fontsLoadedSync = true;
+    return;
+  }
+  if (fontsLoadedSync) return;
   if (fontLoadingPromise) return fontLoadingPromise;
 
   fontLoadingPromise = (async () => {
@@ -185,6 +195,7 @@ export async function loadAllProjectFonts(): Promise<void> {
       if (typeof document !== "undefined" && document.fonts?.ready) {
         await document.fonts.ready;
       }
+      fontsLoadedSync = true;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       cancelRender(err);

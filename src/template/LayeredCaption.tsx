@@ -12,7 +12,7 @@ import {
 import { config } from "../intro.config";
 import { computeLookPlan } from "../looks/director";
 import { getLook, lookToStyleTokens, POP_PALETTE } from "../looks/index";
-import { loadAllProjectFonts } from "../styles/fonts";
+import { isFontsLoaded, loadAllProjectFonts } from "../styles/fonts";
 import { Background } from "../video/Background";
 import type { AnnotatedCue, CaptionProps, CaptionsDoc, ChunkData, WordData, WordRole } from "../types";
 import { CaptionBlock } from "./CaptionBlock";
@@ -24,15 +24,22 @@ import { computeChunkLayout, type ChunkLayout } from "./word-layout";
 type FontState = { ready: boolean; error: string | null };
 
 function useAllFonts(): FontState {
-  const [handle] = useState(() => delayRender("Loading project fonts for all looks"));
-  const [state, setState] = useState<FontState>({ ready: false, error: null });
+  const alreadyLoaded = isFontsLoaded();
+  const [handle] = useState<number | null>(() =>
+    alreadyLoaded ? null : delayRender("Loading project fonts for all looks"),
+  );
+  const [state, setState] = useState<FontState>(() => ({
+    ready: alreadyLoaded,
+    error: null,
+  }));
 
   useEffect(() => {
+    if (alreadyLoaded) return;
     let active = true;
     loadAllProjectFonts()
       .then(() => {
         if (active) setState({ ready: true, error: null });
-        continueRender(handle);
+        if (handle !== null) continueRender(handle);
       })
       .catch((err: unknown) => {
         const reason = err instanceof Error ? err.message : String(err);
@@ -42,15 +49,17 @@ function useAllFonts(): FontState {
           return;
         }
         if (active) setState({ ready: false, error: message });
-        continueRender(handle);
+        if (handle !== null) continueRender(handle);
       });
     return () => {
       active = false;
     };
-  }, [handle]);
+  }, [alreadyLoaded, handle]);
 
   return state;
 }
+
+let globalLayoutCache: { key: string; layouts: ChunkLayout[] } | null = null;
 
 const STOPWORDS = new Set([
   "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with",
@@ -142,10 +151,16 @@ const Captions: React.FC<CaptionProps> = ({
     return computeLookPlan(doc.chunks, looksConfig);
   }, [doc.chunks, looksConfig]);
 
-  // Pre-compute chunk layouts with per-look font metrics
+  // Pre-compute chunk layouts with per-look font metrics (memoized across frames)
   const chunkLayouts = useMemo((): ChunkLayout[] | null => {
     if (!fonts.ready) return null;
-    return doc.chunks.map((chunk, i) => {
+
+    const cacheKey = `${doc.chunks.length}_${width}_${height}_${fps}_${safeMargin}_${offsetY}_${unit}_${looksConfig.force ?? ""}_${looksConfig.energy ?? 1}`;
+    if (globalLayoutCache && globalLayoutCache.key === cacheKey) {
+      return globalLayoutCache.layouts;
+    }
+
+    const layouts = doc.chunks.map((chunk, i) => {
       const planItem = lookPlan[i] ?? { lookId: "pop", variant: 0 };
       const lookTokens = getLook(planItem.lookId);
       const styleTokens = lookToStyleTokens(planItem.lookId);
@@ -158,7 +173,10 @@ const Captions: React.FC<CaptionProps> = ({
         baseFontSizeU: lookTokens.baseFontSizeU,
       });
     });
-  }, [fonts.ready, doc, lookPlan, frameSize, safeMargin, offsetY, unit, fps]);
+
+    globalLayoutCache = { key: cacheKey, layouts };
+    return layouts;
+  }, [fonts.ready, doc, lookPlan, frameSize, safeMargin, offsetY, unit, fps, width, height, looksConfig]);
 
   const isDebug = debugProp ?? config.debug ?? false;
 

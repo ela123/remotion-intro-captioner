@@ -58,6 +58,6 @@ export const EDITORIAL_TOKENS = {
   baseFontSizeU: 64,
   palette: EDITORIAL_PALETTE,
   roles: EDITORIAL_ROLES,
-  shadowPreview: "0 2px 4px rgba(0, 0, 0, 0.6)",
-  shadowFinal: "0 2px 4px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35)",
+  shadowPreview: "0 2px 0 rgba(0, 0, 0, 0.6)",
+  shadowFinal: "0 2px 0 rgba(0, 0, 0, 0.75)",
 };

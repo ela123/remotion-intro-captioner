@@ -105,7 +105,7 @@ Arguments:
 Options:
   --force-render         re-render even if out/<file>.mp4 exists (reuse work/ files)
   --force-all            redo everything from scratch
-  --model <name>         whisper model: base.en | small.en | medium.en  (default: small.en)
+  --model <name>         whisper model: base.en | small.en | medium.en  (default: base.en)
   --concurrency <n>      max parallel renders  (default: 1)
                          Transcription is always sequential.
   -h, --help             show this help
@@ -155,7 +155,7 @@ function parseArgs(argv: string[]): CliOptions {
   let inputDir = "input";
   let forceRender = false;
   let forceAll = false;
-  let model: SupportedModel = "small.en";
+  let model: SupportedModel = "base.en";
   let concurrency = 1;
 
   for (let i = 0; i < args.length; i++) {
@@ -575,6 +575,10 @@ async function stageRender(
       `--props=${absPropsPath}`,
       "--codec=h264",
       "--crf=17",
+      "--concurrency=100%",
+      "--image-format=jpeg",
+      "--jpeg-quality=80",
+      "--x264-preset=ultrafast",
       `--timeout=${timeoutMs}`,
     ]);
 
@@ -893,7 +897,7 @@ async function main(): Promise<void> {
 
       // Transcription
       let transcribeStatus = "DONE";
-      const needsTranscribe = opts.forceAll || !hasWorkFiles || !sourceUnchanged;
+      const needsTranscribe = opts.forceAll || !hasWorkFiles || (!opts.forceRender && !sourceUnchanged);
       if (needsTranscribe) {
         console.log(`  Transcribing (${opts.model})...`);
         log.info(`=== TRANSCRIBE ===`);
@@ -908,7 +912,7 @@ async function main(): Promise<void> {
       if (ac.signal.aborted) throw new Error("Batch aborted by user (Ctrl+C)");
 
       // Analyze
-      const needsAnalyze = opts.forceAll || !existsSync(captionsJsonPath) || !sourceUnchanged;
+      const needsAnalyze = opts.forceAll || !existsSync(captionsJsonPath) || (!opts.forceRender && !sourceUnchanged);
       if (needsAnalyze) {
         console.log(`  Analyzing...`);
         log.info(`=== ANALYZE ===`);

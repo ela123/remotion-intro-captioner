@@ -153,22 +153,34 @@ export const PopGraphics: React.FC<PopGraphicsProps> = ({
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {/* Halftone Dot Blob */}
-      <div
+      {/* Halftone Dot Blob using Simple SVG */}
+      <svg
         style={{
           position: "absolute",
           left: `${blobX}px`,
           top: `${blobY}px`,
           width: `${300 * unit}px`,
           height: `${300 * unit}px`,
-          backgroundImage: `radial-gradient(${blobColor} 20%, transparent 22%)`,
-          backgroundSize: `${16 * unit}px ${16 * unit}px`,
-          WebkitMaskImage: "radial-gradient(circle, black 30%, transparent 70%)",
-          maskImage: "radial-gradient(circle, black 30%, transparent 70%)",
           opacity: 0.18,
           zIndex: 0,
+          overflow: "visible",
         }}
-      />
+        viewBox="0 0 300 300"
+      >
+        <defs>
+          <pattern
+            id={`pop-halftone-${startFrame}`}
+            x="0"
+            y="0"
+            width="16"
+            height="16"
+            patternUnits="userSpaceOnUse"
+          >
+            <circle cx="8" cy="8" r="3" fill={blobColor} />
+          </pattern>
+        </defs>
+        <circle cx="150" cy="150" r="140" fill={`url(#pop-halftone-${startFrame})`} />
+      </svg>
 
       {/* Comic Explosion Burst behind Hero words */}
       {heroWords.map((hw, hIdx) => {

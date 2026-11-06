@@ -239,7 +239,7 @@ export const PopWord: React.FC<PopWordProps> = ({
             borderRadius: `${16 * unit}px`,
             border: `${Math.max(2, 4 * unit)}px solid ${ink}`,
             transform: `rotate(${word.stickerRotation.toFixed(1)}deg)`,
-            filter: POP_TOKENS.dropShadow,
+            boxShadow: POP_TOKENS.dropShadow,
             zIndex: -1,
           }}
         />
@@ -275,7 +275,7 @@ export const PopWord: React.FC<PopWordProps> = ({
           textTransform: word.uppercase ? "uppercase" : "none",
           WebkitTextStroke: `${POP_TOKENS.strokeWidthEm}em ${ink}`,
           paintOrder: "stroke fill",
-          filter: word.role === "hero" ? undefined : POP_TOKENS.dropShadow,
+          textShadow: word.role === "hero" ? undefined : POP_TOKENS.dropShadow,
           lineHeight: 1,
           whiteSpace: "pre",
         }}

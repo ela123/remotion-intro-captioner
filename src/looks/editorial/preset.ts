@@ -1,10 +1,15 @@
 import type { FontFamily, WordRole } from "../../types";
 
+// ─── OBSIDIAN STUDIO · Editorial Palette ─────────────────────────────────────
+// Deep charcoal backgrounds, cool whites, sapphire accent line, warm champagne
 export const EDITORIAL_PALETTE = {
-  paper: "#F4EFE6",
-  ink: "#111111",
-  vermilion: "#E4572E",
-  gold: "#C9A227",
+  paper:    "#F7F6F2",          // Warm near-white
+  ink:      "#0C0D10",          // Near-black
+  sapphire: "#3B82F6",          // Accent: electric sapphire blue
+  champagne:"#E8C87A",          // Secondary: warm champagne gold
+  slate:    "#94A3B8",          // Subdued connector tone
+  vermilion:"#EF4444",          // Emphasis hot-red (kept for compatibility)
+  gold:     "#E8C87A",          // Alias for compatibility with index.ts lookToStyleTokens
 };
 
 export const EDITORIAL_ROLES: Record<
@@ -20,44 +25,44 @@ export const EDITORIAL_ROLES: Record<
   }
 > = {
   hero: {
-    family: "Fraunces",
-    weight: 700,
-    scale: 2.1,
-    uppercase: false,
-    trackingEm: -0.01,
-    fontStyle: "italic",
+    family:     "Fraunces",
+    weight:     800,
+    scale:      1.95,
+    uppercase:  false,
+    trackingEm: -0.02,
+    fontStyle:  "italic",
   },
   accent: {
-    family: "Fraunces",
-    weight: 600,
-    scale: 1.25,
-    uppercase: false,
+    family:     "Fraunces",
+    weight:     600,
+    scale:      1.2,
+    uppercase:  false,
     trackingEm: 0,
-    fontStyle: "normal",
+    fontStyle:  "normal",
   },
   normal: {
-    family: "Fraunces",
-    weight: 400,
-    scale: 1.0,
-    uppercase: false,
+    family:     "DM Sans",
+    weight:     500,
+    scale:      1.0,
+    uppercase:  false,
     trackingEm: 0.01,
-    fontStyle: "normal",
+    fontStyle:  "normal",
   },
   connector: {
-    family: "DM Sans",
-    weight: 500,
-    scale: 0.55,
-    uppercase: true,
-    trackingEm: 0.12,
-    opacity: 0.85,
+    family:     "DM Sans",
+    weight:     400,
+    scale:      0.52,
+    uppercase:  true,
+    trackingEm: 0.14,
+    opacity:    0.72,
   },
 };
 
 export const EDITORIAL_TOKENS = {
-  name: "editorial" as const,
-  baseFontSizeU: 64,
-  palette: EDITORIAL_PALETTE,
-  roles: EDITORIAL_ROLES,
-  shadowPreview: "0 2px 4px rgba(0, 0, 0, 0.6)",
-  shadowFinal: "0 2px 4px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35)",
+  name:          "editorial" as const,
+  baseFontSizeU: 66,
+  palette:       EDITORIAL_PALETTE,
+  roles:         EDITORIAL_ROLES,
+  shadowPreview: "0 3px 16px rgba(0,0,0,0.65)",
+  shadowFinal:   "0 4px 22px rgba(0,0,0,0.80)",
 };

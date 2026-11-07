@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
-import { backOut } from "../../utils/ease";
+import { expoOut } from "../../utils/ease";
 import { seededChoice, seededFloat, seededInt } from "../../utils/prng";
 import { POP_PALETTE } from "./preset";
 import type { Quality } from "../../types";
-import type { ChunkLayout, PlacedWord } from "../../template/word-layout";
+import type { ChunkLayout } from "../../template/word-layout";
 
 type PopGraphicsProps = {
   chunkLayout: ChunkLayout;
@@ -15,26 +15,16 @@ type PopGraphicsProps = {
   decorBudget?: number;
 };
 
-type Doodle = {
-  type: "star" | "sparkle" | "heart" | "squiggle" | "arrow" | "circle" | "zigzag";
+type OrbitDot = {
   x: number;
   y: number;
   size: number;
   color: string;
-  delayFrames: number;
-  floatSeed: string;
+  delay: number;
+  phase: number;
 };
 
-type ConfettiPiece = {
-  x: number;
-  startY: number;
-  vx: number;
-  vy: number;
-  rotationSpeed: number;
-  color: string;
-  size: number;
-  shape: "rect" | "circle";
-};
+const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 
 export const PopGraphics: React.FC<PopGraphicsProps> = ({
   chunkLayout,
@@ -45,24 +35,33 @@ export const PopGraphics: React.FC<PopGraphicsProps> = ({
   energy = 1,
   decorBudget = 1,
 }) => {
-  const { startFrame, bounds } = chunkLayout;
-  const ink = POP_PALETTE.ink;
+  const { startFrame, endFrame, bounds } = chunkLayout;
   const palette = POP_PALETTE.cycle;
 
-  // Find hero words
-  const heroWords = useMemo(() => {
-    const list: PlacedWord[] = [];
-    chunkLayout.lines.forEach((line) => {
-      line.words.forEach((w) => {
-        if (w.role === "hero") list.push(w);
-      });
-    });
-    return list;
-  }, [chunkLayout]);
+  // ── Speech detection ───────────────────────────────────────────────────────
+  const isSpeechActive = useMemo(() => {
+    for (const line of chunkLayout.lines) {
+      for (const w of line.words) {
+        const wS = Math.round(w.start * fps);
+        const wE = Math.round(w.end * fps);
+        if (frame >= wS && frame <= wE + 1) return true;
+      }
+    }
+    return false;
+  }, [chunkLayout, frame, fps]);
 
-  // Exclusion Box: text bounds + sticker backing + shadow + padding (>= 0.5 * baseFontSize) + shake/float
+  // ── Entrance easing ────────────────────────────────────────────────────────
+  const age       = frame - startFrame;
+  const enterProg = clamp01(age / 10);
+  const enterEase = expoOut(enterProg);
+
+  // ── Chunk progress (for subtle pulse) ─────────────────────────────────────
+  const chunkDuration = Math.max(1, endFrame - startFrame);
+  const chunkProg     = clamp01(age / chunkDuration);
+
+  // ── Exclusion zone ─────────────────────────────────────────────────────────
   const exclusionBox = useMemo(() => {
-    const pad = 65 * unit;
+    const pad = 55 * unit;
     return {
       minX: bounds.x - pad,
       maxX: bounds.x + bounds.width + pad,
@@ -71,47 +70,32 @@ export const PopGraphics: React.FC<PopGraphicsProps> = ({
     };
   }, [bounds, unit]);
 
-  // Candidate generation with retry for Doodles outside exclusion box
-  const doodles = useMemo((): Doodle[] => {
-    const count = Math.round(seededInt(`pop-doodles-${startFrame}`, 3, 5) * decorBudget);
-    const result: Doodle[] = [];
-    const types: Doodle["type"][] = [
-      "star",
-      "sparkle",
-      "heart",
-      "squiggle",
-      "arrow",
-      "circle",
-      "zigzag",
-    ];
+  // ── Ambient orbit dots ─────────────────────────────────────────────────────
+  const orbitDots = useMemo((): OrbitDot[] => {
+    const count  = Math.round(seededInt(`pop-od-${startFrame}`, 2, 4) * decorBudget);
+    const result: OrbitDot[] = [];
 
     for (let i = 0; i < count; i++) {
-      let placed = false;
-      const seed = `pop-doodle-${startFrame}-${i}`;
-      for (let attempt = 0; attempt < 8; attempt++) {
-        const attemptSeed = `${seed}-att-${attempt}`;
-        const candX = seededFloat(`${attemptSeed}-x`, 80 * unit, 1840 * unit);
-        const candY = seededFloat(`${attemptSeed}-y`, 120 * unit, 960 * unit);
-        const size = seededFloat(`${attemptSeed}-sz`, 26 * unit, 44 * unit);
-
-        // Check if overlaps exclusion box
-        const inExclusion =
+      const seed = `pop-od-${startFrame}-${i}`;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const aSeed = `${seed}-a${attempt}`;
+        const candX = seededFloat(`${aSeed}-x`, 60 * unit, 1860 * unit);
+        const candY = seededFloat(`${aSeed}-y`, 100 * unit, 980 * unit);
+        const size  = seededFloat(`${aSeed}-s`, 5 * unit, 11 * unit);
+        const overlaps =
           candX + size >= exclusionBox.minX &&
           candX - size <= exclusionBox.maxX &&
           candY + size >= exclusionBox.minY &&
           candY - size <= exclusionBox.maxY;
-
-        if (!inExclusion) {
+        if (!overlaps) {
           result.push({
-            type: seededChoice(`${attemptSeed}-t`, types),
-            x: candX,
-            y: candY,
+            x:     candX,
+            y:     candY,
             size,
-            color: seededChoice(`${attemptSeed}-c`, palette),
-            delayFrames: seededInt(`${attemptSeed}-d`, 0, 4),
-            floatSeed: attemptSeed,
+            color: seededChoice(`${aSeed}-c`, palette),
+            delay: Math.round(seededFloat(`${aSeed}-d`, 0, 8)),
+            phase: seededFloat(`${aSeed}-ph`, 0, Math.PI * 2),
           });
-          placed = true;
           break;
         }
       }
@@ -119,224 +103,179 @@ export const PopGraphics: React.FC<PopGraphicsProps> = ({
     return result;
   }, [startFrame, decorBudget, exclusionBox, unit, palette]);
 
-  // Confetti on first hero beat: max 1 burst per chunk
-  const firstHero = heroWords[0];
-  const heroStartFrame = firstHero ? Math.round(firstHero.start * fps) : startFrame;
-  const confettiPieces = useMemo((): ConfettiPiece[] => {
-    if (!firstHero) return [];
-    const count = quality === "final" ? Math.round(16 * decorBudget) : Math.round(6 * decorBudget);
-    const pieces: ConfettiPiece[] = [];
-    const seed = `confetti-${startFrame}`;
-    for (let i = 0; i < count; i++) {
-      const pSeed = `${seed}-${i}`;
-      pieces.push({
-        x: firstHero.x + firstHero.width / 2 + seededFloat(`${pSeed}-x`, -80 * unit, 80 * unit),
-        startY: firstHero.y + firstHero.height / 2,
-        vx: seededFloat(`${pSeed}-vx`, -6 * unit, 6 * unit) * energy,
-        vy: seededFloat(`${pSeed}-vy`, -10 * unit, -2 * unit) * energy,
-        rotationSpeed: seededFloat(`${pSeed}-r`, -12, 12),
-        color: seededChoice(`${pSeed}-c`, palette),
-        size: seededFloat(`${pSeed}-s`, 8 * unit, 16 * unit),
-        shape: i % 3 === 0 ? "circle" : "rect",
-      });
-    }
-    return pieces;
-  }, [firstHero, startFrame, quality, decorBudget, unit, energy, palette, fps]);
+  // ── Bracket dims ───────────────────────────────────────────────────────────
+  const bPad    = 18 * unit;
+  const bSize   = 16 * unit;
+  const bLeft   = bounds.x - bPad;
+  const bTop    = bounds.y - bPad;
+  const bRight  = bounds.x + bounds.width + bPad;
+  const bBottom = bounds.y + bounds.height + bPad;
+  const bColor  = POP_PALETTE.amber;
+  const bW      = `${1.5 * unit}px solid ${bColor}`;
 
-  const twosFrame = Math.floor(frame / 2) * 2;
+  // ── Waveform geometry ──────────────────────────────────────────────────────
+  const numBars     = 14;
+  const barW        = 2.5 * unit;
+  const barGap      = 3 * unit;
+  const totalEqW    = numBars * barW + (numBars - 1) * barGap;
+  const eqLeft      = bounds.x + (bounds.width - totalEqW) / 2;
+  const eqTop       = bounds.y - 44 * unit;
 
-  // Render Halftone dot blob position (deterministic)
-  const blobSeed = `halftone-${startFrame}`;
-  const blobX = seededFloat(`${blobSeed}-x`, bounds.x - 120 * unit, bounds.x + bounds.width + 80 * unit);
-  const blobY = seededFloat(`${blobSeed}-y`, bounds.y - 100 * unit, bounds.y + bounds.height + 40 * unit);
-  const blobColor = seededChoice(`${blobSeed}-c`, palette);
+  // ── Live speech pulse for bracket border ──────────────────────────────────
+  const pulseProg   = isSpeechActive ? 0.5 + 0.5 * Math.sin(frame * 0.4) : 0;
+  const bracketOpacity = 0.45 + enterEase * 0.35 + pulseProg * 0.2;
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {/* Halftone Dot Blob */}
+
+      {/* ── 1. Warm ambient radial glow behind text block ── */}
       <div
         style={{
-          position: "absolute",
-          left: `${blobX}px`,
-          top: `${blobY}px`,
-          width: `${300 * unit}px`,
-          height: `${300 * unit}px`,
-          backgroundImage: `radial-gradient(${blobColor} 20%, transparent 22%)`,
-          backgroundSize: `${16 * unit}px ${16 * unit}px`,
-          WebkitMaskImage: "radial-gradient(circle, black 30%, transparent 70%)",
-          maskImage: "radial-gradient(circle, black 30%, transparent 70%)",
-          opacity: 0.18,
-          zIndex: 0,
+          position:   "absolute",
+          left:       `${bounds.x + bounds.width / 2}px`,
+          top:        `${bounds.y + bounds.height / 2}px`,
+          width:      `${bounds.width * 2.2}px`,
+          height:     `${bounds.height * 2.4}px`,
+          transform:  "translate(-50%, -50%)",
+          background: `radial-gradient(ellipse at center,
+            rgba(245,158,11,0.09) 0%,
+            rgba(255,107,107,0.05) 45%,
+            transparent 72%)`,
+          opacity:    enterEase,
+          zIndex:     0,
         }}
       />
 
-      {/* Comic Explosion Burst behind Hero words */}
-      {heroWords.map((hw, hIdx) => {
-        const hwStart = Math.round(hw.start * fps);
-        const burstAge = frame - hwStart;
-        if (burstAge < 0 || burstAge > 18) return null;
+      {/* ── 2. Corner bracket reticles ── */}
+      <div
+        style={{
+          position: "absolute",
+          inset:    0,
+          opacity:  bracketOpacity,
+          zIndex:   1,
+        }}
+      >
+        {/* Top-Left */}
+        <div style={{ position: "absolute", left: `${bLeft}px`, top: `${bTop}px`, width: `${bSize}px`, height: `${bSize}px`, borderLeft: bW, borderTop: bW }} />
+        {/* Top-Right */}
+        <div style={{ position: "absolute", left: `${bRight - bSize}px`, top: `${bTop}px`, width: `${bSize}px`, height: `${bSize}px`, borderRight: bW, borderTop: bW }} />
+        {/* Bottom-Left */}
+        <div style={{ position: "absolute", left: `${bLeft}px`, top: `${bBottom - bSize}px`, width: `${bSize}px`, height: `${bSize}px`, borderLeft: bW, borderBottom: bW }} />
+        {/* Bottom-Right */}
+        <div style={{ position: "absolute", left: `${bRight - bSize}px`, top: `${bBottom - bSize}px`, width: `${bSize}px`, height: `${bSize}px`, borderRight: bW, borderBottom: bW }} />
+      </div>
 
-        const burstProgress = Math.min(1, burstAge / 8);
-        const burstSpring = backOut(1.4)(burstProgress);
-        const burstOpacity = burstAge <= 12 ? 1 : 1 - (burstAge - 12) / 6 * 0.7; // fades to 30%
-
-        return (
-          <div
-            key={`burst-${hIdx}`}
-            style={{
-              position: "absolute",
-              left: `${hw.x + hw.width / 2}px`,
-              top: `${hw.y + hw.height / 2}px`,
-              width: `${hw.width * 1.6}px`,
-              height: `${hw.height * 2.2}px`,
-              transform: `translate(-50%, -50%) scale(${burstSpring.toFixed(2)}) rotate(${seededFloat(`burst-r-${hIdx}`, -10, 10)}deg)`,
-              opacity: burstOpacity,
-              zIndex: 1,
-            }}
-          >
-            <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%" }}>
-              <polygon
-                points="50,0 62,32 98,35 68,58 79,92 50,72 21,92 32,58 2,35 38,32"
-                fill={POP_PALETTE.yellow}
-                stroke={ink}
-                strokeWidth="4"
-              />
-            </svg>
-          </div>
-        );
-      })}
-
-      {/* Procedural Doodles */}
-      {doodles.map((d, i) => {
-        const doodleAge = frame - (startFrame + d.delayFrames);
-        if (doodleAge < 0) return null;
-
-        const popInProg = Math.min(1, doodleAge / 6);
-        const popScale = backOut(1.4)(popInProg);
-
-        // Float +/- 4px * unit on twos
-        const floatY = Math.sin((twosFrame + i * 5) * 0.1) * 4 * unit;
-        const floatRot = Math.sin((twosFrame + i * 3) * 0.08) * 8;
-
-        return (
-          <div
-            key={`doodle-${i}`}
-            style={{
-              position: "absolute",
-              left: `${d.x}px`,
-              top: `${d.y + floatY}px`,
-              width: `${d.size}px`,
-              height: `${d.size}px`,
-              transform: `scale(${popScale.toFixed(2)}) rotate(${floatRot.toFixed(1)}deg)`,
-              zIndex: 2,
-            }}
-          >
-            <svg viewBox="0 0 32 32" style={{ width: "100%", height: "100%" }}>
-              {d.type === "star" && (
-                <polygon
-                  points="16,2 20,11 30,12 22,19 25,29 16,23 7,29 10,19 2,12 12,11"
-                  fill={d.color}
-                  stroke={ink}
-                  strokeWidth="2.5"
-                />
-              )}
-              {d.type === "sparkle" && (
-                <path
-                  d="M16 2 Q16 16 30 16 Q16 16 16 30 Q16 16 2 16 Q16 16 16 2 Z"
-                  fill={d.color}
-                  stroke={ink}
-                  strokeWidth="2"
-                />
-              )}
-              {d.type === "heart" && (
-                <path
-                  d="M16 28 C8 20 2 14 2 8 A7 7 0 0 1 16 7 A7 7 0 0 1 30 8 C30 14 24 20 16 28 Z"
-                  fill={d.color}
-                  stroke={ink}
-                  strokeWidth="2"
-                />
-              )}
-              {d.type === "squiggle" && (
-                <path
-                  d="M4 16 Q10 4 16 16 T28 16"
-                  fill="none"
-                  stroke={d.color}
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                />
-              )}
-              {d.type === "zigzag" && (
-                <path
-                  d="M4 22 L10 10 L16 22 L22 10 L28 22"
-                  fill="none"
-                  stroke={d.color}
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              )}
-              {d.type === "circle" && (
-                <circle cx="16" cy="16" r="12" fill={d.color} stroke={ink} strokeWidth="3" />
-              )}
-              {d.type === "arrow" && (
-                <path
-                  d="M6 16 L26 16 M18 8 L26 16 L18 24"
-                  fill="none"
-                  stroke={d.color}
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              )}
-            </svg>
-          </div>
-        );
-      })}
-
-      {/* Confetti */}
-      {frame >= heroStartFrame &&
-        confettiPieces.map((cp, idx) => {
-          const t = (frame - heroStartFrame) / fps;
-          if (t > 1.2) return null;
-          const currentX = cp.x + cp.vx * (t * 30);
-          const currentY = cp.startY + cp.vy * (t * 30) + 0.5 * 18 * unit * Math.pow(t * 30, 2) * 0.04;
-          const rot = cp.rotationSpeed * (t * 30);
-          const opacity = Math.max(0, 1 - t / 1.1);
+      {/* ── 3. Audio waveform bars above text ── */}
+      <div
+        style={{
+          position:        "absolute",
+          left:            `${eqLeft}px`,
+          top:             `${eqTop}px`,
+          display:         "flex",
+          alignItems:      "flex-end",
+          gap:             `${barGap}px`,
+          height:          `${22 * unit}px`,
+          opacity:         enterEase * (isSpeechActive ? 0.9 : 0.4),
+          transform:       `scaleX(${enterEase})`,
+          transformOrigin: "center bottom",
+          zIndex:          2,
+        }}
+      >
+        {Array.from({ length: numBars }).map((_, bi) => {
+          const freq    = 0.3 + (bi % 5) * 0.14;
+          const phase   = bi * 0.6;
+          const wave    = Math.sin(frame * freq + phase);
+          const rawH    = isSpeechActive
+            ? (5 + Math.abs(wave) * 15 * energy) * unit
+            : (3 + Math.abs(wave) * 3.5) * unit;
+          const barCol  = bi % 3 === 0 ? POP_PALETTE.amber : bi % 3 === 1 ? POP_PALETTE.coral : POP_PALETTE.lime;
 
           return (
             <div
-              key={`confetti-${idx}`}
+              key={`wb-${bi}`}
               style={{
-                position: "absolute",
-                left: `${currentX}px`,
-                top: `${currentY}px`,
-                width: `${cp.size}px`,
-                height: cp.shape === "circle" ? `${cp.size}px` : `${cp.size * 0.6}px`,
-                backgroundColor: cp.color,
-                borderRadius: cp.shape === "circle" ? "50%" : `${2 * unit}px`,
-                border: `${1 * unit}px solid ${ink}`,
-                transform: `rotate(${rot}deg)`,
-                opacity,
-                zIndex: 15,
+                width:        `${barW}px`,
+                height:       `${Math.max(2.5 * unit, rawH)}px`,
+                background:   `linear-gradient(to top, ${barCol}, ${barCol}66)`,
+                borderRadius: `${1.5 * unit}px`,
+                boxShadow:    isSpeechActive ? `0 0 ${5 * unit}px ${barCol}88` : undefined,
               }}
             />
           );
         })}
+      </div>
 
-      {/* Final Quality Halftone Overlay (6% opacity) */}
-      {quality === "final" && (
+      {/* ── 4. Live indicator pill ── */}
+      <div
+        style={{
+          position:        "absolute",
+          left:            `${bounds.x + bounds.width / 2}px`,
+          top:             `${bounds.y - 68 * unit}px`,
+          transform:       `translateX(-50%) scale(${enterEase})`,
+          transformOrigin: "bottom center",
+          display:         "flex",
+          alignItems:      "center",
+          gap:             `${5 * unit}px`,
+          padding:         `${2 * unit}px ${10 * unit}px`,
+          background:      "rgba(13,15,20,0.78)",
+          backdropFilter:  "blur(8px)",
+          borderRadius:    `${999}px`,
+          border:          `1px solid rgba(245,158,11,0.25)`,
+          opacity:         enterEase * 0.9,
+          zIndex:          2,
+        }}
+      >
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: `radial-gradient(${ink} 15%, transparent 16%)`,
-            backgroundSize: `${6 * unit}px ${6 * unit}px`,
-            opacity: 0.06,
-            pointerEvents: "none",
-            zIndex: 20,
+            width:           `${5 * unit}px`,
+            height:          `${5 * unit}px`,
+            borderRadius:    "50%",
+            backgroundColor: isSpeechActive ? POP_PALETTE.lime : POP_PALETTE.amber,
+            boxShadow:       `0 0 ${7 * unit}px ${isSpeechActive ? POP_PALETTE.lime : POP_PALETTE.amber}`,
           }}
         />
-      )}
+        <span
+          style={{
+            fontFamily:    `"DM Sans", sans-serif`,
+            fontSize:      `${10 * unit}px`,
+            fontWeight:    700,
+            color:         "rgba(254,252,232,0.82)",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+          }}
+        >
+          {isSpeechActive ? "On Air" : "Captioned"}
+        </span>
+      </div>
+
+      {/* ── 5. Ambient orbit dots outside text zone ── */}
+      {orbitDots.map((dot, idx) => {
+        const dotAge = frame - (startFrame + dot.delay);
+        if (dotAge < 0) return null;
+        const dotEnter  = clamp01(dotAge / 8);
+        const floatY    = Math.sin(frame * 0.07 + dot.phase) * 7 * unit;
+        const floatX    = Math.cos(frame * 0.055 + dot.phase) * 5 * unit;
+
+        return (
+          <div
+            key={`od-${idx}`}
+            style={{
+              position:     "absolute",
+              left:         `${dot.x + floatX}px`,
+              top:          `${dot.y + floatY}px`,
+              width:        `${dot.size}px`,
+              height:       `${dot.size}px`,
+              borderRadius: "50%",
+              backgroundColor: dot.color,
+              boxShadow:    `0 0 ${dot.size * 1.2}px ${dot.color}88`,
+              transform:    `scale(${dotEnter.toFixed(3)})`,
+              opacity:      dotEnter * 0.65,
+              zIndex:       1,
+            }}
+          />
+        );
+      })}
+
     </div>
   );
 };

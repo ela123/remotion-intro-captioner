@@ -1,7 +1,6 @@
 import React from "react";
 import { fontFamilyCss } from "../../styles/fonts";
 import { backOut, expoOut } from "../../utils/ease";
-import { seededChoice } from "../../utils/prng";
 import { EDITORIAL_PALETTE, EDITORIAL_TOKENS } from "./preset";
 import type { Quality } from "../../types";
 import type { PlacedWord } from "../../template/word-layout";
@@ -35,147 +34,166 @@ export const EditorialWord: React.FC<EditorialWordProps> = ({
   heroIndexInChunk,
   accentIndexInChunk,
 }) => {
-  const paper = EDITORIAL_PALETTE.paper;
-  const vermilion = EDITORIAL_PALETTE.vermilion;
+  const paper     = EDITORIAL_PALETTE.paper;
+  const champagne = EDITORIAL_PALETTE.champagne;
+  const sapphire  = EDITORIAL_PALETTE.sapphire;
 
-  // Spoken timing
-  const wordStartFrame = Math.round(word.start * fps);
-  const wordEndFrame = Math.round(word.end * fps);
-  const spokenDuration = Math.max(1, wordEndFrame - wordStartFrame);
+  // ── Timing ────────────────────────────────────────────────────────────────
+  const wordStartFrame  = Math.round(word.start * fps);
+  const wordEndFrame    = Math.round(word.end * fps);
+  const spokenDuration  = Math.max(1, wordEndFrame - wordStartFrame);
+  const chunkDuration   = Math.max(1, chunkEndFrame - chunkStartFrame);
 
-  // Entrance timing
-  const chunkDuration = Math.max(1, chunkEndFrame - chunkStartFrame);
-  const defaultEntranceDur = word.role === "hero" ? 8 : 7;
+  const defaultEntranceDur   = word.role === "hero" ? 9 : word.role === "connector" ? 5 : 7;
   const maxAvailableEntrance = Math.max(3, chunkDuration - 12);
-  const enterDuration = Math.min(defaultEntranceDur, maxAvailableEntrance);
-  const enterStart = Math.min(wordStartFrame - 2, chunkEndFrame - 6 - enterDuration);
+  const enterDuration        = Math.min(defaultEntranceDur, maxAvailableEntrance);
+  const enterStart           = Math.min(wordStartFrame - 2, chunkEndFrame - 6 - enterDuration);
 
   if (frame < enterStart) return null;
 
   const rawEnterProg = clamp01((frame - enterStart) / enterDuration);
-  const isSpoken = frame >= wordStartFrame && frame <= wordEndFrame + 2;
-  const spokenProg = clamp01((frame - wordStartFrame) / spokenDuration);
+  const isSpoken     = frame >= wordStartFrame && frame <= wordEndFrame + 2;
+  const isPast       = frame > wordEndFrame + 2;
+  const spokenProg   = clamp01((frame - wordStartFrame) / spokenDuration);
 
-  // 1. Entrance Motion by Role
-  let enterTransY = 0;
-  let enterTransYPercent = 0;
-  let enterOpacity = word.opacity;
-  let enterTrackingEm = word.trackingEm;
-  let liveWeight = word.fontWeight;
+  // ── 1. Entrance by role ────────────────────────────────────────────────────
+  let enterTransY         = 0;
+  let enterTransYPercent  = 0;
+  let enterOpacity        = word.opacity;
+  let enterTrackingEm     = word.trackingEm;
+  let liveWeight          = word.fontWeight;
 
   if (word.role === "hero") {
-    // drop-through-mask: letters/word falls from -120% to 0 with 4% overshoot settle, weight 300 -> 800
-    const spr = backOut(1.1)(rawEnterProg);
-    enterTransYPercent = (1 - spr) * -120;
-    liveWeight = Math.round(300 + spr * 500); // 300 -> 800
+    // Drop through mask from -110% with spring overshoot — weight blooms 400→800
+    const spr          = backOut(1.08)(rawEnterProg);
+    enterTransYPercent = (1 - spr) * -110;
+    enterOpacity       = rawEnterProg;
+    liveWeight         = Math.round(400 + spr * 400);
   } else if (word.role === "accent") {
-    // rise-mask: from +100% to 0, expoOut, 7 frames
-    const spr = expoOut(rawEnterProg);
-    enterTransYPercent = (1 - spr) * 100;
+    // Rise mask from +90%
+    const spr          = expoOut(rawEnterProg);
+    enterTransYPercent = (1 - spr) * 90;
+    enterOpacity       = spr;
   } else if (word.role === "connector") {
-    // track-in: opacity 0 -> 0.85, letter-spacing 0.3em -> 0.12em
-    enterOpacity = rawEnterProg * 0.85;
-    enterTrackingEm = 0.3 - rawEnterProg * (0.3 - 0.12);
+    // Track-in: fade with letter-spacing collapse
+    enterOpacity    = rawEnterProg * (word.opacity ?? 0.72);
+    enterTrackingEm = 0.28 - rawEnterProg * (0.28 - 0.14);
   } else {
-    // normal: soft-drop translateY -14px * unit -> 0 with opacity 0 -> 1
-    const spr = expoOut(rawEnterProg);
-    enterTransY = -14 * unit * (1 - spr);
+    // Normal: soft drop with opacity
+    const spr    = expoOut(rawEnterProg);
+    enterTransY  = -12 * unit * (1 - spr);
     enterOpacity = spr;
   }
 
-  // 2. Emphasis
-  let showRule = false;
+  // ── 2. Spoken emphasis ─────────────────────────────────────────────────────
+  let showRule    = false;
   let ruleProgress = 0;
-  let textColor = paper;
-  let skewX = 0;
+  let textColor   = paper;
 
   if (word.role === "hero") {
     if (isSpoken) {
-      // weight-swell: 600 -> 850 across duration
-      liveWeight = Math.round(600 + spokenProg * 250);
-      showRule = true;
+      // Weight swell: 600 → 900, colour shifts to champagne
+      liveWeight  = Math.round(600 + spokenProg * 300);
+      textColor   = champagne;
+      showRule    = true;
       const ruleAge = frame - wordStartFrame;
-      ruleProgress = clamp01(ruleAge / 8);
-    } else if (frame > wordEndFrame) {
-      liveWeight = 750;
-      showRule = true;
+      ruleProgress  = clamp01(ruleAge / 7);
+    } else if (isPast) {
+      liveWeight  = 750;
+      textColor   = champagne;
+      showRule    = true;
       ruleProgress = 1;
-    }
-  } else if (word.role === "accent" && isSpoken) {
-    const isLean = accentIndexInChunk % 2 === 1;
-    if (isLean) {
-      skewX = -10 * spokenProg;
     } else {
-      // color-turn: paper -> vermilion in 3 frames
-      const colorProg = clamp01((frame - wordStartFrame) / 3);
-      textColor = colorProg > 0.5 ? vermilion : paper;
+      textColor   = paper;
     }
+  } else if (word.role === "accent") {
+    if (isSpoken) {
+      // Even accents: colour-turn to sapphire; Odd: subtle skew
+      if (accentIndexInChunk % 2 === 0) {
+        textColor = sapphire;
+      } else {
+        textColor = paper;
+      }
+    } else if (isPast) {
+      textColor = paper;
+    } else {
+      textColor = paper;
+      enterOpacity = Math.min(enterOpacity, 0.65);
+    }
+  } else {
+    if (!isSpoken && !isPast) enterOpacity = Math.min(enterOpacity, 0.65);
+    textColor = paper;
   }
 
-  const fontCss = fontFamilyCss(word.fontFamily);
-  const textShadow = quality === "final" ? EDITORIAL_TOKENS.shadowFinal : EDITORIAL_TOKENS.shadowPreview;
+  const fontCss    = fontFamilyCss(word.fontFamily);
+  const textShadow = isSpoken
+    ? `0 0 ${18 * unit}px rgba(232,200,122,0.35), ${quality === "final" ? EDITORIAL_TOKENS.shadowFinal : EDITORIAL_TOKENS.shadowPreview}`
+    : quality === "final"
+      ? EDITORIAL_TOKENS.shadowFinal
+      : EDITORIAL_TOKENS.shadowPreview;
 
-  // If connector: small caps styling
   const isConnector = word.role === "connector";
+
+  // ── Determine top-level opacity ────────────────────────────────────────────
+  const finalOpacity = isPast ? 1.0 : enterOpacity;
 
   return (
     <div
       style={{
-        position: "absolute",
-        left: word.x,
-        top: word.y,
-        width: word.width,
-        height: word.height,
-        // Overflow hidden mask for gravity drop/rise entrance & exit!
-        overflow: "hidden",
+        position:     "absolute",
+        left:         word.x,
+        top:          word.y,
+        width:        word.width,
+        height:       word.height,
         pointerEvents: "none",
-        zIndex: word.role === "hero" ? 10 : 2,
+        zIndex:       isSpoken ? 15 : word.role === "hero" ? 10 : 2,
       }}
     >
       <div
         style={{
-          width: "100%",
-          height: "100%",
-          display: "inline-flex",
-          alignItems: "center",
+          width:          "100%",
+          height:         "100%",
+          display:        "inline-flex",
+          alignItems:     "center",
           justifyContent: "center",
-          transform: `translateY(${enterTransYPercent}%) translateY(${enterTransY.toFixed(1)}px) skewX(${skewX}deg)`,
-          opacity: enterOpacity,
+          transform:      `translateY(${enterTransYPercent}%) translateY(${enterTransY.toFixed(1)}px)`,
+          opacity:        finalOpacity,
         }}
       >
-        {/* Letters or Text Block */}
         <span
           style={{
-            fontFamily: fontCss,
-            fontSize: `${word.fontSize}px`,
-            fontWeight: liveWeight,
-            fontStyle: word.fontStyle,
-            fontVariant: isConnector ? "small-caps" : undefined,
-            color: textColor,
+            fontFamily:    fontCss,
+            fontSize:      `${word.fontSize}px`,
+            fontWeight:    liveWeight,
+            fontStyle:     word.fontStyle,
+            fontVariant:   isConnector ? "small-caps" : undefined,
+            color:         textColor,
             letterSpacing: `${enterTrackingEm}em`,
             textTransform: word.uppercase ? "uppercase" : "none",
             textShadow,
-            lineHeight: 1,
-            whiteSpace: "pre",
+            lineHeight:    1,
+            whiteSpace:    "pre",
+            transition:    "color 0.12s ease",
           }}
         >
           {word.text}
         </span>
       </div>
 
-      {/* Hairline Vermilion Rule Underneath Hero */}
+      {/* ── Sapphire-to-champagne underline rule (hero spoken & past) ── */}
       {showRule && (
         <div
           style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: `${Math.max(1.5, 2 * unit)}px`,
-            backgroundColor: vermilion,
+            position:        "absolute",
+            bottom:          `${-3 * unit}px`,
+            left:            0,
+            right:           0,
+            height:          `${Math.max(1.5, 2 * unit)}px`,
+            background:      `linear-gradient(90deg, ${sapphire}, ${champagne})`,
             transformOrigin: "left center",
-            transform: `scaleX(${ruleProgress})`,
-            zIndex: 11,
+            transform:       `scaleX(${ruleProgress})`,
+            boxShadow:       `0 0 ${8 * unit}px rgba(232,200,122,0.65)`,
+            zIndex:          11,
           }}
         />
       )}

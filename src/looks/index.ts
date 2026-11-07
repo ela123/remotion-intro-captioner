@@ -61,7 +61,7 @@ export function lookToStyleTokens(lookId: LookId): StyleTokens {
     durationMultiplier: 1.0,
     emphasis: {
       pop: lookId === "pop",
-      accentColor: lookId === "editorial" ? EDITORIAL_PALETTE.vermilion : POP_PALETTE.yellow,
+      accentColor: lookId === "editorial" ? EDITORIAL_PALETTE.champagne : POP_PALETTE.amber,
       underline: false,
       glowPulse: false,
     },

@@ -3,7 +3,7 @@ import { fontFamilyCss } from "../../styles/fonts";
 import { expoOut } from "../../utils/ease";
 import { EDITORIAL_PALETTE } from "./preset";
 import type { Quality } from "../../types";
-import type { ChunkLayout, PlacedWord } from "../../template/word-layout";
+import type { ChunkLayout } from "../../template/word-layout";
 
 type EditorialGraphicsProps = {
   chunkLayout: ChunkLayout;
@@ -14,6 +14,8 @@ type EditorialGraphicsProps = {
   chunkIndexInRun?: number;
 };
 
+const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
+
 export const EditorialGraphics: React.FC<EditorialGraphicsProps> = ({
   chunkLayout,
   frame,
@@ -22,8 +24,9 @@ export const EditorialGraphics: React.FC<EditorialGraphicsProps> = ({
   chunkIndexInRun = 1,
 }) => {
   const { startFrame, bounds } = chunkLayout;
-  const paper = EDITORIAL_PALETTE.paper;
-  const vermilion = EDITORIAL_PALETTE.vermilion;
+  const paper     = EDITORIAL_PALETTE.paper;
+  const champagne = EDITORIAL_PALETTE.champagne;
+  const sapphire  = EDITORIAL_PALETTE.sapphire;
 
   const heroWord = useMemo(() => {
     for (const line of chunkLayout.lines) {
@@ -34,80 +37,147 @@ export const EditorialGraphics: React.FC<EditorialGraphicsProps> = ({
     return null;
   }, [chunkLayout]);
 
-  // Entrance timing for hairline rules and index marker
-  const age = frame - startFrame;
-  const ruleProgress = Math.min(1, Math.max(0, age / 12));
-  const ruleEase = expoOut(ruleProgress);
+  // ── Entrance timing ────────────────────────────────────────────────────────
+  const age       = frame - startFrame;
+  const enterProg = clamp01(age / 12);
+  const enterEase = expoOut(enterProg);
 
-  const indexStr = String(chunkIndexInRun).padStart(2, "0");
-  const connectorFont = fontFamilyCss("DM Sans");
+  // ── Backplate dimensions ───────────────────────────────────────────────────
+  const padX     = 28 * unit;
+  const padY     = 20 * unit;
+  const cardLeft = bounds.x - padX;
+  const cardTop  = bounds.y - padY;
+  const cardW    = bounds.width + padX * 2;
+  const cardH    = bounds.height + padY * 2;
+
+  const indexStr    = String(chunkIndexInRun).padStart(2, "0");
+  const monoFont    = fontFamilyCss("DM Sans");
+  const serifFont   = fontFamilyCss("Fraunces");
+
+  // ── Speech activity ────────────────────────────────────────────────────────
+  const isSpeechActive = useMemo(() => {
+    for (const line of chunkLayout.lines) {
+      for (const w of line.words) {
+        const wS = Math.round(w.start * fps);
+        const wE = Math.round(w.end * fps);
+        if (frame >= wS && frame <= wE + 1) return true;
+      }
+    }
+    return false;
+  }, [chunkLayout, frame, fps]);
+
+  // ── Sapphire rule width — expands to fit longest line ─────────────────────
+  const ruleW = Math.min(cardW - 32 * unit, 320 * unit);
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {/* Soft Bottom Readability Gradient (ink, 0 -> 40% opacity) */}
+
+      {/* ── 1. Obsidian glass backplate ── */}
       <div
         style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: "45%",
-          background: "linear-gradient(to top, rgba(17, 17, 17, 0.42) 0%, rgba(17, 17, 17, 0) 100%)",
-          zIndex: 0,
+          position:        "absolute",
+          left:            `${cardLeft}px`,
+          top:             `${cardTop}px`,
+          width:           `${cardW}px`,
+          height:          `${cardH}px`,
+          background:      "linear-gradient(160deg, rgba(10,12,18,0.82) 0%, rgba(14,16,24,0.90) 100%)",
+          backdropFilter:  "blur(16px)",
+          borderRadius:    `${13 * unit}px`,
+          border:          "1px solid rgba(255,255,255,0.10)",
+          boxShadow:       `0 24px 50px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.14)`,
+          opacity:         enterEase * 0.96,
+          transform:       `scale(${0.97 + enterEase * 0.03})`,
+          transformOrigin: "center center",
+          zIndex:          0,
         }}
       />
 
-      {/* Elegant Hairline Rule Above the Block */}
+      {/* ── 2. Warm spotlight behind text ── */}
       <div
         style={{
-          position: "absolute",
-          left: `${bounds.x}px`,
-          top: `${bounds.y - 24 * unit}px`,
-          width: `${Math.min(bounds.width, 400 * unit)}px`,
-          height: `${Math.max(1, 1.5 * unit)}px`,
-          backgroundColor: vermilion,
+          position:  "absolute",
+          left:      `${bounds.x + bounds.width / 2}px`,
+          top:       `${bounds.y + bounds.height / 2}px`,
+          width:     `${bounds.width * 1.4}px`,
+          height:    `${bounds.height * 1.6}px`,
+          transform: "translate(-50%,-50%)",
+          background:"radial-gradient(ellipse at center, rgba(232,200,122,0.10) 0%, transparent 68%)",
+          opacity:   enterEase,
+          zIndex:    0,
+        }}
+      />
+
+      {/* ── 3. Sapphire-to-champagne hairline rule above card ── */}
+      <div
+        style={{
+          position:        "absolute",
+          left:            `${cardLeft + 16 * unit}px`,
+          top:             `${cardTop - 10 * unit}px`,
+          width:           `${ruleW}px`,
+          height:          `${Math.max(1, 1.5 * unit)}px`,
+          background:      `linear-gradient(90deg, ${sapphire}, ${champagne})`,
           transformOrigin: "left center",
-          transform: `scaleX(${ruleEase})`,
-          opacity: 0.85,
-          zIndex: 1,
+          transform:       `scaleX(${enterEase})`,
+          boxShadow:       `0 0 ${8 * unit}px rgba(59,130,246,0.45)`,
+          opacity:         0.9,
+          zIndex:          1,
         }}
       />
 
-      {/* Small Index Numeral Marker ("01", "02") */}
+      {/* ── 4. Thin accent bar on left edge of card ── */}
       <div
         style={{
-          position: "absolute",
-          left: `${bounds.x}px`,
-          top: `${bounds.y - 48 * unit}px`,
-          fontFamily: connectorFont,
-          fontSize: `${22 * unit}px`,
-          fontWeight: 600,
-          color: paper,
-          letterSpacing: "0.15em",
-          opacity: ruleEase * 0.7,
-          zIndex: 1,
+          position:        "absolute",
+          left:            `${cardLeft}px`,
+          top:             `${cardTop + 12 * unit}px`,
+          width:           `${Math.max(1.5, 2 * unit)}px`,
+          height:          `${(cardH - 24 * unit) * enterEase}px`,
+          background:      `linear-gradient(to bottom, ${sapphire}, ${champagne})`,
+          borderRadius:    `${1 * unit}px`,
+          boxShadow:       `0 0 ${7 * unit}px rgba(59,130,246,0.4)`,
+          opacity:         0.75,
+          zIndex:          1,
+        }}
+      />
+
+      {/* ── 5. Chapter index marker (e.g. "03") ── */}
+      <div
+        style={{
+          position:      "absolute",
+          left:          `${cardLeft + 16 * unit}px`,
+          top:           `${cardTop - 34 * unit}px`,
+          display:       "flex",
+          alignItems:    "center",
+          gap:           `${6 * unit}px`,
+          fontFamily:    monoFont,
+          fontSize:      `${11 * unit}px`,
+          fontWeight:    600,
+          color:         champagne,
+          letterSpacing: "0.18em",
+          opacity:       enterEase * 0.9,
+          zIndex:        1,
         }}
       >
-        {indexStr}
+        <span style={{ color: sapphire }}>§</span>
+        <span style={{ textTransform: "uppercase" }}>{`Beat ${indexStr}`}</span>
       </div>
 
-      {/* Single Asterisk Glyphs near Hero Word */}
-      {heroWord && (
-        <div
-          style={{
-            position: "absolute",
-            left: `${heroWord.x + heroWord.width + 6 * unit}px`,
-            top: `${heroWord.y - 6 * unit}px`,
-            fontFamily: fontFamilyCss("Fraunces"),
-            fontSize: `${28 * unit}px`,
-            color: vermilion,
-            opacity: ruleEase * 0.9,
-            zIndex: 2,
-          }}
-        >
-          *
-        </div>
-      )}
+      {/* ── 6. Live indicator dot (top-right of card) ── */}
+      <div
+        style={{
+          position:  "absolute",
+          left:      `${cardLeft + cardW - 22 * unit}px`,
+          top:       `${cardTop + 10 * unit}px`,
+          width:     `${6 * unit}px`,
+          height:    `${6 * unit}px`,
+          borderRadius: "50%",
+          backgroundColor: isSpeechActive ? sapphire : champagne,
+          boxShadow:  `0 0 ${8 * unit}px ${isSpeechActive ? sapphire : champagne}`,
+          opacity:    enterEase * (isSpeechActive ? 1 : 0.5),
+          zIndex:     2,
+        }}
+      />
+
     </div>
   );
 };

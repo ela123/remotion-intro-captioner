@@ -1,9 +1,8 @@
 import React from "react";
 import { fontFamilyCss } from "../../styles/fonts";
 import { backOut, expoOut } from "../../utils/ease";
-import { seededChoice, seededFloat } from "../../utils/prng";
-import { POP_PALETTE, POP_TOKENS } from "./preset";
-import type { Quality, WordRole } from "../../types";
+import { POP_PALETTE } from "./preset";
+import type { Quality } from "../../types";
 import type { PlacedWord } from "../../template/word-layout";
 
 type PopWordProps = {
@@ -38,281 +37,218 @@ export const PopWord: React.FC<PopWordProps> = ({
   accentIndexInChunk,
   normalIndexInChunk,
 }) => {
-  const ink = POP_PALETTE.ink;
+  const ink   = POP_PALETTE.ink;
   const cream = POP_PALETTE.cream;
 
-  // Real spoken frames
-  const wordStartFrame = Math.round(word.start * fps);
-  const wordEndFrame = Math.round(word.end * fps);
-  const spokenDuration = Math.max(1, wordEndFrame - wordStartFrame);
+  // ── Timing ────────────────────────────────────────────────────────────────
+  const wordStartFrame  = Math.round(word.start * fps);
+  const wordEndFrame    = Math.round(word.end * fps);
+  const spokenDuration  = Math.max(1, wordEndFrame - wordStartFrame);
+  const chunkDuration   = Math.max(1, chunkEndFrame - chunkStartFrame);
 
-  // Entrance timing: spoken start minus 2 frames anticipation, clamped
-  const chunkDuration = Math.max(1, chunkEndFrame - chunkStartFrame);
-  const defaultEntranceDur = word.role === "connector" ? 4 : 7;
+  const defaultEntranceDur   = word.role === "connector" ? 4 : 7;
   const maxAvailableEntrance = Math.max(3, chunkDuration - 12);
-  const enterDuration = Math.min(defaultEntranceDur, maxAvailableEntrance);
-  const enterStart = Math.min(wordStartFrame - 2, chunkEndFrame - 6 - enterDuration);
+  const enterDuration        = Math.min(defaultEntranceDur, maxAvailableEntrance);
+  const enterStart           = Math.min(wordStartFrame - 2, chunkEndFrame - 6 - enterDuration);
 
   if (frame < enterStart) return null;
 
   const rawEnterProg = clamp01((frame - enterStart) / enterDuration);
-  const isSpoken = frame >= wordStartFrame && frame <= wordEndFrame + 2;
-  const spokenProg = clamp01((frame - wordStartFrame) / spokenDuration);
+  const isSpoken     = frame >= wordStartFrame && frame <= wordEndFrame + 2;
+  const isPast       = frame > wordEndFrame + 2;
+  const spokenProg   = clamp01((frame - wordStartFrame) / spokenDuration);
 
-  // Quantized frame on twos for hand-made feel
-  const twosFrame = Math.floor(frame / 2) * 2;
+  // ── Active colour for this word slot ──────────────────────────────────────
+  const cycle = POP_PALETTE.cycle;
+  const colorIndex = (heroIndexInChunk + accentIndexInChunk + word.lineIndex) % cycle.length;
+  const accentColor = word.color && word.color !== cream ? word.color : cycle[colorIndex]!;
 
-  // 1. Entrance by Role
-  let enterScaleX = 1;
-  let enterScaleY = 1;
-  let enterRotOffset = 0;
+  // ── 1. Entrance Animation ─────────────────────────────────────────────────
   let enterTransY = 0;
+  let enterScale  = 1;
+  let enterRot    = 0;
   let enterOpacity = word.opacity;
 
   if (word.role === "hero") {
-    const isSpin = heroIndexInChunk % 2 === 1;
-    if (isSpin) {
-      // spin-pop: rotate -180 -> 0, scale 0 -> 1.1 -> 1.0
-      const spr = backOut(1.4)(rawEnterProg);
-      enterScaleX = spr;
-      enterScaleY = spr;
-      enterRotOffset = (1 - rawEnterProg) * -180;
-    } else {
-      // sticker-slap: scale 1.8 -> 1.0, 6deg rotation snap, overshoot to 0.92, settle
-      if (rawEnterProg < 0.6) {
-        const t = rawEnterProg / 0.6;
-        const s = 1.8 - t * 0.88;
-        enterScaleX = s;
-        enterScaleY = s;
-        enterRotOffset = (1 - t) * 6 * energy;
-      } else {
-        const t = (rawEnterProg - 0.6) / 0.4;
-        const s = 0.92 + t * 0.08;
-        enterScaleX = s;
-        enterScaleY = s;
-        enterRotOffset = 0;
-      }
-    }
+    // Smooth spring rise from below with gentle overshoot
+    const spr    = backOut(1.15)(rawEnterProg);
+    enterScale   = 0.6 + spr * 0.4;
+    enterTransY  = (1 - rawEnterProg) * 22 * unit;
+    enterOpacity = rawEnterProg;
   } else if (word.role === "accent") {
-    const isBounce = accentIndexInChunk % 2 === 1;
-    if (isBounce) {
-      // drop-bounce: falls from -60px * unit, bounces twice
-      if (rawEnterProg < 0.5) {
-        const t = rawEnterProg / 0.5;
-        enterTransY = -60 * unit * (1 - t * t);
-      } else if (rawEnterProg < 0.8) {
-        const t = (rawEnterProg - 0.5) / 0.3;
-        enterTransY = -Math.sin(t * Math.PI) * 16 * unit;
-      } else {
-        const t = (rawEnterProg - 0.8) / 0.2;
-        enterTransY = -Math.sin(t * Math.PI) * 6 * unit;
-      }
-    } else {
-      // jelly: scaleX 1.3/scaleY 0.7 -> 0.9/1.15 -> 1.0
-      if (rawEnterProg < 0.5) {
-        const t = rawEnterProg / 0.5;
-        enterScaleX = 1.3 - t * 0.4;
-        enterScaleY = 0.7 + t * 0.45;
-      } else {
-        const t = (rawEnterProg - 0.5) / 0.5;
-        enterScaleX = 0.9 + t * 0.1;
-        enterScaleY = 1.15 - t * 0.15;
-      }
-    }
+    // Clean expo-out scale-up from origin
+    const spr    = expoOut(rawEnterProg);
+    enterScale   = 0.72 + spr * 0.28;
+    enterTransY  = (1 - spr) * 14 * unit;
+    enterOpacity = rawEnterProg;
   } else if (word.role === "connector") {
-    // fade-pop (4 frames)
-    enterOpacity = rawEnterProg * 0.9;
-    if (rawEnterProg < 0.5) {
-      const t = rawEnterProg / 0.5;
-      enterScaleX = 0.6 + t * 0.06;
-      enterScaleY = enterScaleX;
-    } else {
-      const t = (rawEnterProg - 0.5) / 0.5;
-      enterScaleX = 0.66 - t * 0.06;
-      enterScaleY = enterScaleX;
-    }
+    // Fade + subtle drift
+    enterOpacity = rawEnterProg * (word.opacity ?? 0.75);
+    enterTransY  = (1 - rawEnterProg) * 6 * unit;
   } else {
-    // normal: pop, or every 3rd normal is wiggle-in
-    const isWiggle = normalIndexInChunk % 3 === 2;
-    if (isWiggle) {
-      const spr = expoOut(rawEnterProg);
-      enterScaleX = spr;
-      enterScaleY = spr;
-      enterRotOffset = Math.sin(rawEnterProg * Math.PI * 4) * 6 * (1 - rawEnterProg);
+    // Normal: snappy expo
+    const spr    = expoOut(rawEnterProg);
+    enterScale   = 0.82 + spr * 0.18;
+    enterTransY  = (1 - spr) * 10 * unit;
+    enterOpacity = spr;
+  }
+
+  // ── 2. Active Spoken State ────────────────────────────────────────────────
+  let activeScale = 1.0;
+  let showCard    = false;
+
+  if (isSpoken && (word.role === "hero" || word.role === "accent")) {
+    // Smooth punch peak at ~30%, settle back to 1
+    const punch  = Math.sin(Math.min(1, spokenProg * 1.5) * Math.PI);
+    activeScale  = 1.0 + punch * 0.08 * energy;
+    showCard     = true;
+  } else if (isSpoken) {
+    showCard = true;
+  }
+
+  // ── 3. Opacity ────────────────────────────────────────────────────────────
+  let finalOpacity = enterOpacity;
+  if (!isSpoken && !isPast) {
+    finalOpacity = Math.min(enterOpacity, 0.65);
+  } else if (isPast) {
+    finalOpacity = 1.0;
+  }
+
+  // ── 4. Text Colour ────────────────────────────────────────────────────────
+  let textColor = cream;
+  if (isSpoken) {
+    if (word.role === "hero" || word.role === "accent") {
+      textColor = accentColor;
     } else {
-      const spr = backOut(1.4)(rawEnterProg);
-      enterScaleX = spr;
-      enterScaleY = spr;
+      textColor = cream;
     }
+  } else if (isPast) {
+    textColor = word.role === "hero" ? accentColor : cream;
+  } else {
+    textColor = cream;
   }
 
-  // 2. Emphasis Motion
-  let empScaleX = 1;
-  let empScaleY = 1;
-  let empRot = 0;
-  let empTransY = 0;
-  let showHighlight = false;
-  let highlightColor = POP_PALETTE.yellow;
-  let showStars = false;
+  // ── 5. Text Shadow ────────────────────────────────────────────────────────
+  const textShadow = isSpoken
+    ? `0 0 ${20 * unit}px ${accentColor}99, 0 0 ${42 * unit}px ${accentColor}33, 0 3px 18px rgba(0,0,0,0.95)`
+    : isPast
+      ? `0 2px 14px rgba(0,0,0,0.9)`
+      : `0 2px 8px rgba(0,0,0,0.7)`;
 
-  const cycle = POP_PALETTE.cycle;
-  const stickerColor = word.color ?? POP_PALETTE.yellow;
-  const stickerIdx = cycle.indexOf(stickerColor as any);
-  const nextPaletteColor = cycle[(stickerIdx + 1) % cycle.length] ?? POP_PALETTE.pink;
-
-  if (word.role === "hero" && isSpoken) {
-    showHighlight = true;
-    highlightColor = nextPaletteColor;
-    showStars = decorBudget > 0.6;
-    empScaleX = 1.04;
-    empScaleY = 1.04;
-  } else if (word.role === "accent" && isSpoken) {
-    const accentType = accentIndexInChunk % 3;
-    if (accentType === 0) {
-      // wobble on twos
-      const decay = 1 - spokenProg;
-      empRot = Math.sin((twosFrame - wordStartFrame) * 0.9) * 4 * decay * energy;
-    } else if (accentType === 1) {
-      // squash-bounce
-      if (spokenProg < 0.3) {
-        const t = spokenProg / 0.3;
-        empScaleX = 1.0 + t * 0.18;
-        empScaleY = 1.0 - t * 0.12;
-      } else if (spokenProg < 0.7) {
-        const t = (spokenProg - 0.3) / 0.4;
-        empScaleX = 1.18 - t * 0.23;
-        empScaleY = 0.88 + t * 0.18;
-      } else {
-        const t = (spokenProg - 0.7) / 0.3;
-        empScaleX = 0.95 + t * 0.05;
-        empScaleY = 1.06 - t * 0.06;
-      }
-    }
-  }
-
-  // 3. Resting Rotation
-  const baseRot = word.rotation;
-  const finalRot = baseRot + enterRotOffset + empRot;
-  const finalScaleX = enterScaleX * empScaleX;
-  const finalScaleY = enterScaleY * empScaleY;
-  const finalTransY = enterTransY + empTransY;
-
-  // Text Fill Contrast Rule
-  const isBackingYellowOrMintOrSky =
-    stickerColor === POP_PALETTE.yellow ||
-    stickerColor === POP_PALETTE.mint ||
-    stickerColor === POP_PALETTE.sky;
-  const textFill = word.role === "hero"
-    ? isBackingYellowOrMintOrSky ? ink : cream
-    : word.role === "connector"
-      ? cream
-      : word.color ?? cream;
-
-  const fontCss = fontFamilyCss(word.fontFamily);
-  const pad = 12 * unit;
+  const fontCss     = fontFamilyCss(word.fontFamily);
+  const totalScale  = enterScale * activeScale;
+  const padX        = 12 * unit;
+  const padY        = 6 * unit;
 
   return (
     <div
       style={{
-        position: "absolute",
-        left: word.x,
-        top: word.y,
-        width: word.width,
-        height: word.height,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transform: `translate(0px, ${finalTransY.toFixed(1)}px) rotate(${finalRot.toFixed(2)}deg) scale(${finalScaleX.toFixed(3)}, ${finalScaleY.toFixed(3)})`,
-        transformOrigin: "center center",
-        opacity: enterOpacity,
-        pointerEvents: "none",
-        zIndex: word.role === "hero" ? 10 : word.role === "accent" ? 5 : 1,
+        position:        "absolute",
+        left:            word.x,
+        top:             word.y,
+        width:           word.width,
+        height:          word.height,
+        display:         "inline-flex",
+        alignItems:      "center",
+        justifyContent:  "center",
+        transform:       `translate(0px, ${enterTransY.toFixed(1)}px) rotate(${enterRot.toFixed(2)}deg) scale(${totalScale.toFixed(3)})`,
+        transformOrigin: "center bottom",
+        opacity:         finalOpacity,
+        pointerEvents:   "none",
+        zIndex:          isSpoken ? 20 : word.role === "hero" ? 10 : 5,
       }}
     >
-      {/* Hero Sticker Backing */}
-      {word.role === "hero" && (
+      {/* ── Warm Glassmorphic Card (spoken state) ── */}
+      {showCard && (
         <div
           style={{
-            position: "absolute",
-            inset: -pad,
-            backgroundColor: stickerColor,
-            borderRadius: `${16 * unit}px`,
-            border: `${Math.max(2, 4 * unit)}px solid ${ink}`,
-            transform: `rotate(${word.stickerRotation.toFixed(1)}deg)`,
-            filter: POP_TOKENS.dropShadow,
-            zIndex: -1,
+            position:       "absolute",
+            left:           -padX,
+            right:          -padX,
+            top:            -padY,
+            bottom:         -padY,
+            background:     `linear-gradient(135deg, rgba(18,15,12,0.92) 0%, rgba(32,24,14,0.85) 100%)`,
+            backdropFilter: "blur(12px)",
+            borderRadius:   `${9 * unit}px`,
+            border:         `1.5px solid ${accentColor}88`,
+            boxShadow:      `0 8px 30px rgba(0,0,0,0.80), 0 0 ${16 * unit}px ${accentColor}33, inset 0 1px 0 rgba(255,255,255,0.14)`,
+            zIndex:         -1,
+            pointerEvents:  "none",
           }}
         />
       )}
 
-      {/* Marker Highlight Wipe */}
-      {showHighlight && (
+      {/* ── Progress bar beneath spoken word ── */}
+      {isSpoken && (
         <div
           style={{
-            position: "absolute",
-            inset: -pad * 0.7,
-            backgroundColor: highlightColor,
-            borderRadius: `${10 * unit}px`,
+            position:        "absolute",
+            left:            0,
+            right:           0,
+            bottom:          `${-4 * unit}px`,
+            height:          `${Math.max(2, 2.5 * unit)}px`,
+            background:      `linear-gradient(90deg, ${accentColor}, ${accentColor}00)`,
+            borderRadius:    `${999}px`,
             transformOrigin: "left center",
-            transform: `scaleX(${Math.min(1, spokenProg * 2.5)})`,
-            zIndex: 0,
-            opacity: 0.9,
+            transform:       `scaleX(${spokenProg.toFixed(3)})`,
+            boxShadow:       `0 0 ${8 * unit}px ${accentColor}`,
+            zIndex:          2,
           }}
         />
       )}
 
-      {/* Text Element */}
+      {/* ── Main text ── */}
       <span
         style={{
-          position: "relative",
-          zIndex: 1,
-          fontFamily: fontCss,
-          fontSize: `${word.fontSize}px`,
-          fontWeight: word.fontWeight,
-          fontStyle: word.fontStyle,
-          color: showHighlight ? ink : textFill,
+          position:      "relative",
+          zIndex:        1,
+          fontFamily:    fontCss,
+          fontSize:      `${word.fontSize}px`,
+          fontWeight:    word.fontWeight,
+          fontStyle:     word.fontStyle,
+          color:         textColor,
           letterSpacing: `${word.trackingEm}em`,
           textTransform: word.uppercase ? "uppercase" : "none",
-          WebkitTextStroke: `${POP_TOKENS.strokeWidthEm}em ${ink}`,
-          paintOrder: "stroke fill",
-          filter: word.role === "hero" ? undefined : POP_TOKENS.dropShadow,
-          lineHeight: 1,
-          whiteSpace: "pre",
+          textShadow,
+          lineHeight:    1,
+          whiteSpace:    "pre",
+          transition:    "color 0.08s ease",
         }}
       >
         {word.text}
       </span>
 
-      {/* Star Burst around Hero */}
-      {showStars && (
+      {/* ── Particle burst on hero activation ── */}
+      {isSpoken && word.role === "hero" && decorBudget > 0.5 && (
         <div
           style={{
-            position: "absolute",
-            inset: 0,
+            position:     "absolute",
+            inset:        0,
             pointerEvents: "none",
-            zIndex: 12,
+            zIndex:       15,
           }}
         >
-          {Array.from({ length: quality === "final" ? 8 : 4 }).map((_, si) => {
-            const angle = (si / (quality === "final" ? 8 : 4)) * Math.PI * 2;
-            const starDist = (28 + spokenProg * 45) * unit;
-            const sx = Math.cos(angle) * starDist;
-            const sy = Math.sin(angle) * starDist;
-            const starOpacity = Math.max(0, 1 - spokenProg * 1.5);
+          {Array.from({ length: quality === "final" ? 6 : 3 }).map((_, si) => {
+            const angle      = (si / (quality === "final" ? 6 : 3)) * Math.PI * 2;
+            const dist       = (20 + spokenProg * 38) * unit;
+            const sx         = Math.cos(angle) * dist;
+            const sy         = Math.sin(angle) * dist;
+            const pOpacity   = Math.max(0, 1 - spokenProg * 1.8);
+            const pSize      = (3.5 + (si % 2) * 1.5) * unit;
             return (
               <div
-                key={`star-${si}`}
+                key={`p-${si}`}
                 style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: "50%",
-                  width: `${8 * unit}px`,
-                  height: `${8 * unit}px`,
-                  backgroundColor: highlightColor,
-                  borderRadius: "50%",
-                  border: `${1.5 * unit}px solid ${ink}`,
-                  transform: `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px)`,
-                  opacity: starOpacity,
+                  position:     "absolute",
+                  left:         "50%",
+                  top:          "50%",
+                  width:        `${pSize}px`,
+                  height:       `${pSize}px`,
+                  borderRadius: si % 2 === 0 ? "50%" : `${1 * unit}px`,
+                  backgroundColor: accentColor,
+                  transform:    `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) rotate(${si * 60}deg)`,
+                  boxShadow:    `0 0 ${5 * unit}px ${accentColor}`,
+                  opacity:      pOpacity,
                 }}
               />
             );

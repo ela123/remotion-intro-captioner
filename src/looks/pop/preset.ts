@@ -1,14 +1,16 @@
 import type { FontFamily, WordRole } from "../../types";
 
+// ─── THERMAL · Pop Palette ───────────────────────────────────────────────────
+// Warm cinematic broadcast: amber / coral / electric chartreuse
 export const POP_PALETTE = {
-  ink: "#1B1B2F",
-  cream: "#FFF8E7",
-  pink: "#FF3D8B",
-  yellow: "#FFD93D",
-  sky: "#4CC9F0",
-  mint: "#3DDC97",
-  violet: "#7B5CFF",
-  cycle: ["#FF3D8B", "#FFD93D", "#4CC9F0", "#3DDC97", "#7B5CFF"] as const,
+  ink:    "#0D0F14",          // Near-black base
+  cream:  "#FEFCE8",          // Warm off-white
+  amber:  "#F59E0B",          // Primary accent: deep amber
+  coral:  "#FF6B6B",          // Secondary: vivid coral
+  lime:   "#A3E635",          // Tertiary: electric lime
+  sky:    "#38BDF8",          // Cool pop: sky blue
+  violet: "#A78BFA",          // Luxe violet
+  cycle:  ["#F59E0B", "#FF6B6B", "#A3E635", "#38BDF8", "#A78BFA"] as const,
 };
 
 export const POP_ROLES: Record<
@@ -24,48 +26,50 @@ export const POP_ROLES: Record<
   }
 > = {
   hero: {
-    family: "Lilita One",
-    weight: 400,
-    scale: 2.0,
+    family: "DM Sans",
+    weight: 900,
+    scale: 1.9,
     uppercase: true,
-    trackingEm: 0.02,
+    trackingEm: -0.02,
   },
   accent: {
-    family: "Fredoka",
+    family: "DM Sans",
     weight: 700,
-    scale: 1.35,
+    scale: 1.3,
     uppercase: false,
-    trackingEm: 0.01,
+    trackingEm: -0.01,
   },
   normal: {
-    family: "Fredoka",
+    family: "DM Sans",
     weight: 600,
     scale: 1.0,
     uppercase: false,
     trackingEm: 0,
   },
   connector: {
-    family: "Fredoka",
-    weight: 500,
-    scale: 0.6,
-    uppercase: false,
-    trackingEm: 0.05,
-    opacity: 0.9,
+    family: "DM Sans",
+    weight: 400,
+    scale: 0.62,
+    uppercase: true,
+    trackingEm: 0.1,
+    opacity: 0.75,
   },
 };
 
 export const POP_TOKENS = {
   name: "pop" as const,
-  baseFontSizeU: 78,
+  baseFontSizeU: 76,
   palette: POP_PALETTE,
   roles: POP_ROLES,
-  // Stroke & shadow rules
-  strokeWidthEm: 0.18,
-  dropShadow: "0.06em 0.08em 0 #1B1B2F",
-  // Text fill contrast rule
+  strokeWidthEm: 0,
+  dropShadow: "0 4px 24px rgba(0,0,0,0.9)",
   textColorForBacking: (bgColor: string): string => {
     const c = bgColor.toUpperCase();
-    if (c === POP_PALETTE.yellow || c === POP_PALETTE.mint || c === POP_PALETTE.sky) {
+    if (
+      c === POP_PALETTE.amber.toUpperCase() ||
+      c === POP_PALETTE.lime.toUpperCase() ||
+      c === POP_PALETTE.sky.toUpperCase()
+    ) {
       return POP_PALETTE.ink;
     }
     return POP_PALETTE.cream;

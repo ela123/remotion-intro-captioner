@@ -3,7 +3,7 @@ import { fontFamilyCss } from "../../styles/fonts";
 import { expoOut } from "../../utils/ease";
 import { EDITORIAL_PALETTE } from "./preset";
 import type { Quality } from "../../types";
-import type { ChunkLayout, PlacedWord } from "../../template/word-layout";
+import type { ChunkLayout } from "../../template/word-layout";
 
 type EditorialGraphicsProps = {
   chunkLayout: ChunkLayout;
@@ -23,101 +23,100 @@ export const EditorialGraphics: React.FC<EditorialGraphicsProps> = ({
 }) => {
   const { startFrame, bounds } = chunkLayout;
   const paper = EDITORIAL_PALETTE.paper;
+  const gold = EDITORIAL_PALETTE.gold;
   const vermilion = EDITORIAL_PALETTE.vermilion;
 
-  const heroWord = useMemo(() => {
-    for (const line of chunkLayout.lines) {
-      for (const w of line.words) {
-        if (w.role === "hero") return w;
-      }
-    }
-    return null;
-  }, [chunkLayout]);
-
-  // Entrance timing for hairline rules and index marker
+  // Entrance timing
   const age = frame - startFrame;
-  const ruleProgress = Math.min(1, Math.max(0, age / 12));
-  const ruleEase = expoOut(ruleProgress);
+  const enterProg = Math.min(1, Math.max(0, age / 10));
+  const enterEase = expoOut(enterProg);
 
   const indexStr = String(chunkIndexInRun).padStart(2, "0");
-  const connectorFont = fontFamilyCss("DM Sans");
+  const monoFont = fontFamilyCss("Space Mono");
+
+  // Floating card dimensions
+  const cardPadX = 24 * unit;
+  const cardPadY = 18 * unit;
+  const cardLeft = bounds.x - cardPadX;
+  const cardTop = bounds.y - cardPadY;
+  const cardWidth = bounds.width + cardPadX * 2;
+  const cardHeight = bounds.height + cardPadY * 2;
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {/* Soft Bottom Readability Gradient via Simple SVG */}
-      <svg
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: "100%",
-          height: "45%",
-          zIndex: 0,
-        }}
-        preserveAspectRatio="none"
-        viewBox="0 0 100 100"
-      >
-        <defs>
-          <linearGradient id="editorial-readability-grad" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stopColor="#111111" stopOpacity="0.42" />
-            <stop offset="100%" stopColor="#111111" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <rect width="100" height="100" fill="url(#editorial-readability-grad)" />
-      </svg>
-
-      {/* Elegant Hairline Rule Above the Block */}
+      {/* 1. Frosted Acrylic Glass Studio Backplate */}
       <div
         style={{
           position: "absolute",
-          left: `${bounds.x}px`,
-          top: `${bounds.y - 24 * unit}px`,
-          width: `${Math.min(bounds.width, 400 * unit)}px`,
+          left: `${cardLeft}px`,
+          top: `${cardTop}px`,
+          width: `${cardWidth}px`,
+          height: `${cardHeight}px`,
+          background: "linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(10, 15, 26, 0.85) 100%)",
+          backdropFilter: "blur(14px)",
+          borderRadius: `${14 * unit}px`,
+          border: "1px solid rgba(255, 255, 255, 0.14)",
+          boxShadow: `0 20px 45px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.18)`,
+          opacity: enterEase * 0.95,
+          transform: `scale(${0.96 + enterEase * 0.04})`,
+          transformOrigin: "center center",
+          zIndex: 0,
+        }}
+      />
+
+      {/* 2. Soft Ambient Warm Spotlight behind the caption */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${bounds.x + bounds.width / 2}px`,
+          top: `${bounds.y + bounds.height / 2}px`,
+          width: `${bounds.width * 1.2}px`,
+          height: `${bounds.height * 1.5}px`,
+          transform: "translate(-50%, -50%)",
+          background: "radial-gradient(ellipse at center, rgba(243, 206, 114, 0.12) 0%, transparent 70%)",
+          opacity: enterEase,
+          zIndex: 0,
+        }}
+      />
+
+      {/* 3. Elegant Hairline Rule Above the Block */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${cardLeft + 16 * unit}px`,
+          top: `${cardTop - 12 * unit}px`,
+          width: `${Math.min(cardWidth - 32 * unit, 280 * unit)}px`,
           height: `${Math.max(1, 1.5 * unit)}px`,
-          backgroundColor: vermilion,
+          background: `linear-gradient(90deg, ${gold}, ${vermilion})`,
           transformOrigin: "left center",
-          transform: `scaleX(${ruleEase})`,
-          opacity: 0.85,
+          transform: `scaleX(${enterEase})`,
+          boxShadow: `0 0 ${8 * unit}px rgba(243, 206, 114, 0.5)`,
+          opacity: 0.9,
           zIndex: 1,
         }}
       />
 
-      {/* Small Index Numeral Marker ("01", "02") */}
+      {/* 4. Minimalist Studio Chapter Index Marker */}
       <div
         style={{
           position: "absolute",
-          left: `${bounds.x}px`,
-          top: `${bounds.y - 48 * unit}px`,
-          fontFamily: connectorFont,
-          fontSize: `${22 * unit}px`,
-          fontWeight: 600,
-          color: paper,
-          letterSpacing: "0.15em",
-          opacity: ruleEase * 0.7,
+          left: `${cardLeft + 16 * unit}px`,
+          top: `${cardTop - 32 * unit}px`,
+          display: "flex",
+          alignItems: "center",
+          gap: `${8 * unit}px`,
+          fontFamily: monoFont,
+          fontSize: `${11 * unit}px`,
+          fontWeight: 700,
+          color: gold,
+          letterSpacing: "0.18em",
+          opacity: enterEase * 0.85,
           zIndex: 1,
         }}
       >
-        {indexStr}
+        <span style={{ color: vermilion }}>//</span>
+        <span>{`INSIGHT ${indexStr}`}</span>
       </div>
-
-      {/* Single Asterisk Glyphs near Hero Word */}
-      {heroWord && (
-        <div
-          style={{
-            position: "absolute",
-            left: `${heroWord.x + heroWord.width + 6 * unit}px`,
-            top: `${heroWord.y - 6 * unit}px`,
-            fontFamily: fontFamilyCss("Fraunces"),
-            fontSize: `${28 * unit}px`,
-            color: vermilion,
-            opacity: ruleEase * 0.9,
-            zIndex: 2,
-          }}
-        >
-          *
-        </div>
-      )}
     </div>
   );
 };

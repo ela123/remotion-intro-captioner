@@ -1,6 +1,5 @@
 import React from "react";
 import { fontFamilyCss } from "../../styles/fonts";
-import { quartInOut } from "../../utils/ease";
 import { POSTER_PALETTE } from "./preset";
 import type { Quality } from "../../types";
 import type { PlacedWord } from "../../template/word-layout";
@@ -32,86 +31,81 @@ export const PosterWord: React.FC<PosterWordProps> = ({
   quality,
   energy = 1,
   heroIndexInChunk,
+  accentIndexInChunk,
   lineScaleX = 1.0,
 }) => {
   const bone = POSTER_PALETTE.bone;
   const black = POSTER_PALETTE.black;
   const heroColors = POSTER_PALETTE.heroCycle;
-  const blockColor = heroColors[heroIndexInChunk % heroColors.length]!;
+  const blockColor = heroColors[(heroIndexInChunk + accentIndexInChunk) % heroColors.length]!;
 
   // Timing
   const wordStartFrame = Math.round(word.start * fps);
   const wordEndFrame = Math.round(word.end * fps);
   const spokenDuration = Math.max(1, wordEndFrame - wordStartFrame);
 
-  // Entrance starts at word start (cut-in/stomp), no anticipation on normal cut
+  // Entrance starts at word start (cut-in/stomp)
   const enterStart = word.role === "hero" ? Math.max(chunkStartFrame, wordStartFrame - 2) : wordStartFrame;
   if (frame < enterStart) return null;
 
-  const isSpoken = frame >= wordStartFrame && frame <= wordEndFrame + 2;
+  const isSpoken = frame >= wordStartFrame && frame <= wordEndFrame + 1;
+  const isPast = frame > wordEndFrame + 1;
   const spokenProg = clamp01((frame - wordStartFrame) / spokenDuration);
 
-  // 1. Entrances
+  // 1. Entrance Stomp / Cut-in
   let enterScale = 1.0;
-  let showColorBarWipe = false;
-  let barWipeProgress = 0;
-  let barRevealProgress = 0;
   let visibleChars = word.text.length;
 
   if (word.role === "hero") {
-    // stomp: scale 1.35 -> 0.96 (1-frame hold) -> 1.0 in 5 frames
+    // Sharp high-velocity stomp
     const stompAge = frame - enterStart;
     if (stompAge <= 2) {
-      const t = stompAge / 2;
-      enterScale = 1.35 - t * (1.35 - 0.96);
+      enterScale = 1.25 - (stompAge / 2) * 0.28;
     } else if (stompAge === 3) {
-      enterScale = 0.96; // 1-frame hold
+      enterScale = 0.97;
     } else if (stompAge <= 5) {
-      const t = (stompAge - 3) / 2;
-      enterScale = 0.96 + t * 0.04;
+      enterScale = 0.97 + ((stompAge - 3) / 2) * 0.03;
     } else {
       enterScale = 1.0;
     }
-
-    // Color bar wiping in behind (4 frames, trailing by 1 frame)
-    const wipeAge = frame - (enterStart + 1);
-    showColorBarWipe = true;
-    barWipeProgress = clamp01(wipeAge / 4);
-  } else if (word.role === "accent") {
-    // bar-wipe-reveal: colored bar sweeps L->R across word, reveals word behind (6 frames)
-    const wipeAge = frame - wordStartFrame;
-    barRevealProgress = clamp01(wipeAge / 6);
   } else if (word.role === "connector") {
-    // type-on: 1 char per frame up to 6 frames
     const typeAge = frame - wordStartFrame;
     visibleChars = Math.min(word.text.length, Math.max(1, typeAge + 1));
   } else {
-    // normal: cut-in: 2-frame 8% scale settle
+    // Cut-in
     const cutAge = frame - wordStartFrame;
-    if (cutAge === 0) enterScale = 1.08;
-    else if (cutAge === 1) enterScale = 1.04;
+    if (cutAge === 0) enterScale = 1.06;
     else enterScale = 1.0;
   }
 
-  // 2. Emphasis
-  let isBlockInverted = false;
-  if (word.role === "hero" && isSpoken) {
-    isBlockInverted = true;
-  }
+  // 2. High-Contrast Inverted Block Highlighting
+  const showBlock = isSpoken;
 
-  const fontCss = fontFamilyCss(word.fontFamily);
-  const pad = 8 * unit;
-
-  // Stomp hero shake on hero element only (3 frames of 4px*unit on hero start)
+  // Stomp micro-shake on hero start
   let heroShakeX = 0;
   if (word.role === "hero") {
     const shakeAge = frame - wordStartFrame;
     if (shakeAge >= 0 && shakeAge < 3) {
-      heroShakeX = ((shakeAge % 2 === 0 ? 1 : -1) * 4 * unit * energy);
+      heroShakeX = (shakeAge % 2 === 0 ? 1 : -1) * 3 * unit * energy;
     }
   }
 
+  const fontCss = fontFamilyCss(word.fontFamily);
+  const padX = 8 * unit;
+  const padY = 4 * unit;
   const displayedText = word.role === "connector" ? word.text.slice(0, visibleChars) : word.text;
+
+  let textColor = bone;
+  if (showBlock) {
+    textColor = black;
+  } else if (isPast) {
+    textColor = word.role === "hero" ? blockColor : bone;
+  } else {
+    // Future word in chunk
+    textColor = bone;
+  }
+
+  const opacity = !isSpoken && !isPast ? 0.65 : 1.0;
 
   return (
     <div
@@ -126,39 +120,29 @@ export const PosterWord: React.FC<PosterWordProps> = ({
         justifyContent: "center",
         transform: `translate(${heroShakeX.toFixed(1)}px, 0px) scale(${enterScale.toFixed(3)}) scaleX(${lineScaleX.toFixed(3)})`,
         transformOrigin: "center center",
+        opacity,
         pointerEvents: "none",
-        zIndex: word.role === "hero" ? 10 : word.role === "accent" ? 6 : 2,
+        zIndex: isSpoken ? 15 : word.role === "hero" ? 10 : 2,
       }}
     >
-      {/* Hero Sharp Color Block (Ink-free, sharp corners) */}
-      {word.role === "hero" && (
+      {/* High-Contrast Dynamic Inverted Cyber Block */}
+      {showBlock && (
         <div
           style={{
             position: "absolute",
-            inset: -pad,
-            backgroundColor: isBlockInverted ? bone : blockColor,
-            transformOrigin: "left center",
-            transform: `scaleX(${barWipeProgress})`,
+            left: -padX,
+            right: -padX,
+            top: -padY,
+            bottom: -padY,
+            backgroundColor: blockColor,
+            borderRadius: `${4 * unit}px`,
+            boxShadow: `0 0 ${16 * unit}px ${blockColor}`,
             zIndex: -1,
           }}
         />
       )}
 
-      {/* Accent Bar-Wipe Reveal Cover Bar */}
-      {word.role === "accent" && barRevealProgress < 1 && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundColor: blockColor,
-            transformOrigin: "right center",
-            transform: `scaleX(${1 - barRevealProgress})`,
-            zIndex: 5,
-          }}
-        />
-      )}
-
-      {/* Text Element */}
+      {/* Main Display Typography */}
       <span
         style={{
           position: "relative",
@@ -167,43 +151,17 @@ export const PosterWord: React.FC<PosterWordProps> = ({
           fontSize: `${word.fontSize}px`,
           fontWeight: word.fontWeight,
           fontStyle: word.fontStyle,
-          color:
-            word.role === "hero"
-              ? isBlockInverted ? black : bone
-              : word.role === "accent"
-                ? "transparent" // hollow outline
-                : bone,
-          WebkitTextStroke: word.role === "accent" ? `${Math.max(1.5, 2.5 * unit)}px ${bone}` : undefined,
+          color: textColor,
           letterSpacing: `${word.trackingEm}em`,
           textTransform: "uppercase",
-          lineHeight: 0.9,
+          lineHeight: 0.92,
           whiteSpace: "pre",
+          textShadow: showBlock ? undefined : "0 3px 12px rgba(0, 0, 0, 0.9)",
+          transition: "color 0.08s ease",
         }}
       >
         {displayedText}
       </span>
-
-      {/* Accent Karaoke Fill during Spoken Duration */}
-      {word.role === "accent" && isSpoken && (
-        <span
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 2,
-            fontFamily: fontCss,
-            fontSize: `${word.fontSize}px`,
-            fontWeight: word.fontWeight,
-            color: blockColor,
-            letterSpacing: `${word.trackingEm}em`,
-            textTransform: "uppercase",
-            lineHeight: 0.9,
-            whiteSpace: "pre",
-            clipPath: `inset(0 ${(1 - spokenProg) * 100}% 0 0)`,
-          }}
-        >
-          {displayedText}
-        </span>
-      )}
     </div>
   );
 };

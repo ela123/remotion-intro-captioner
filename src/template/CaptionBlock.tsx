@@ -319,16 +319,17 @@ export const CaptionBlock: React.FC<CaptionBlockProps> = ({
         })}
       </div>
 
-      {/* Poster Exit Wipe Bar */}
+      {/* Poster Exit Laser Wipe Bar */}
       {posterExit && posterExit.wipeProgress > 0 && (
         <div
           style={{
             position: "absolute",
-            left: `${bounds.x - 20 * unit}px`,
+            left: `${bounds.x - 24 * unit}px`,
             top: `${bounds.y - 20 * unit}px`,
-            width: `${bounds.width + 40 * unit}px`,
+            width: `${bounds.width + 48 * unit}px`,
             height: `${bounds.height + 40 * unit}px`,
-            backgroundColor: "#FF3B1D",
+            background: "linear-gradient(90deg, #D4FF00 0%, #00F0FF 100%)",
+            boxShadow: `0 0 ${20 * unit}px #00F0FF`,
             transformOrigin: "left center",
             transform: `scaleX(${posterExit.wipeProgress})`,
             zIndex: 30,

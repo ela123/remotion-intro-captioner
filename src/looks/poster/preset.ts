@@ -1,12 +1,12 @@
 import type { FontFamily, WordRole } from "../../types";
 
 export const POSTER_PALETTE = {
-  bone: "#F2F0EB",
-  black: "#0B0B0B",
-  signalRed: "#FF3B1D",
-  electricBlue: "#2E5BFF",
-  acid: "#D7FF3A",
-  heroCycle: ["#FF3B1D", "#2E5BFF", "#D7FF3A"] as const,
+  bone: "#FFFFFF",
+  black: "#05070B",
+  signalRed: "#FF1744",
+  electricBlue: "#00F0FF",
+  acid: "#D4FF00",
+  heroCycle: ["#D4FF00", "#00F0FF", "#FF1744"] as const,
 };
 
 export const POSTER_ROLES: Record<
@@ -24,14 +24,14 @@ export const POSTER_ROLES: Record<
   hero: {
     family: "Anton",
     weight: 400,
-    scale: 2.2,
+    scale: 2.1,
     uppercase: true,
     trackingEm: 0.01,
   },
   accent: {
     family: "Anton",
     weight: 400,
-    scale: 1.4,
+    scale: 1.35,
     uppercase: true,
     trackingEm: 0.02,
   },
@@ -44,17 +44,17 @@ export const POSTER_ROLES: Record<
   },
   connector: {
     family: "Space Mono",
-    weight: 400,
-    scale: 0.5,
+    weight: 700,
+    scale: 0.52,
     uppercase: true,
-    trackingEm: 0.04,
+    trackingEm: 0.06,
   },
 };
 
 export const POSTER_TOKENS = {
   name: "poster" as const,
-  baseFontSizeU: 84,
+  baseFontSizeU: 80,
   palette: POSTER_PALETTE,
   roles: POSTER_ROLES,
-  tightLeading: 0.9,
+  tightLeading: 0.92,
 };

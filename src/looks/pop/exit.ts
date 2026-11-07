@@ -7,8 +7,8 @@ export type PopExitStyle = {
 };
 
 /**
- * Pop-out exit: 6 frames
- * scale 1.0 -> 1.08 -> 0 with +/-8deg seeded rotation per line, lines staggered by 1 frame.
+ * Pop-out exit: 5-6 frames
+ * Smooth cinematic zoom-dissolve (1.0 -> 1.03 -> 0.92, opacity 1 -> 0) with subtle organic micro-drift.
  */
 export function getPopLineExit(
   frame: number,
@@ -17,8 +17,8 @@ export function getPopLineExit(
   totalLines: number,
   seed: string,
 ): PopExitStyle {
-  const lineStart = exitStartFrame + lineIndex * 1; // 1 frame stagger
-  const progress = (frame - lineStart) / 5; // 5-6 frames duration
+  const lineStart = exitStartFrame + lineIndex * 1;
+  const progress = (frame - lineStart) / 5;
   const t = Math.max(0, Math.min(1, progress));
 
   if (t <= 0) {
@@ -26,19 +26,19 @@ export function getPopLineExit(
   }
 
   const lineSeed = `${seed}-pop-line-${lineIndex}`;
-  const maxRot = seededFloat(lineSeed, -8, 8);
+  const maxRot = seededFloat(lineSeed, -1.8, 1.8);
 
   let scale = 1;
   if (t < 0.3) {
-    // 1.0 -> 1.08
-    scale = 1 + (t / 0.3) * 0.08;
+    // Subtle anticipation snap (1.0 -> 1.03)
+    scale = 1 + (t / 0.3) * 0.03;
   } else {
-    // 1.08 -> 0
-    scale = 1.08 * (1 - (t - 0.3) / 0.7);
+    // Smooth cinematic dissolve
+    scale = 1.03 - ((t - 0.3) / 0.7) * 0.12;
   }
 
   const rotation = maxRot * t;
-  const opacity = t >= 0.95 ? 0 : 1;
+  const opacity = Math.max(0, 1 - t * 1.05);
 
   return {
     scale: Math.max(0, scale),

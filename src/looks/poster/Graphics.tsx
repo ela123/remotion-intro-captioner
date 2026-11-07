@@ -3,7 +3,7 @@ import { fontFamilyCss } from "../../styles/fonts";
 import { expoOut } from "../../utils/ease";
 import { POSTER_PALETTE } from "./preset";
 import type { Quality } from "../../types";
-import type { ChunkLayout, PlacedWord } from "../../template/word-layout";
+import type { ChunkLayout } from "../../template/word-layout";
 
 type PosterGraphicsProps = {
   chunkLayout: ChunkLayout;
@@ -18,10 +18,11 @@ export const PosterGraphics: React.FC<PosterGraphicsProps> = ({
   frame,
   fps,
   unit,
-  quality,
 }) => {
   const { startFrame, endFrame, bounds } = chunkLayout;
   const bone = POSTER_PALETTE.bone;
+  const acid = POSTER_PALETTE.acid;
+  const cyan = POSTER_PALETTE.electricBlue;
   const red = POSTER_PALETTE.signalRed;
 
   const heroWord = useMemo(() => {
@@ -34,16 +35,18 @@ export const PosterGraphics: React.FC<PosterGraphicsProps> = ({
   }, [chunkLayout]);
 
   const age = frame - startFrame;
-  const lineProgress = Math.min(1, Math.max(0, age / 8));
+  const lineProgress = Math.min(1, Math.max(0, age / 7));
   const lineEase = expoOut(lineProgress);
 
   const duration = Math.max(1, endFrame - startFrame);
   const chunkProgress = Math.min(1, Math.max(0, age / duration));
-  const ghostScale = 1.55 + 0.1 * chunkProgress;
+  const ghostScale = 1.45 + 0.08 * chunkProgress;
+
+  const monoFont = fontFamilyCss("Space Mono");
 
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-      {/* Ghost-Echo behind the block: huge outlined copy of hero word */}
+      {/* 1. Monumental Outlined Cyber Ghost-Echo */}
       {heroWord && (
         <div
           style={{
@@ -52,14 +55,14 @@ export const PosterGraphics: React.FC<PosterGraphicsProps> = ({
             top: `${bounds.y + bounds.height / 2}px`,
             transform: `translate(-50%, -50%) scale(${ghostScale.toFixed(3)})`,
             zIndex: 0,
-            opacity: 0.08,
+            opacity: 0.1,
             fontFamily: fontFamilyCss("Anton"),
-            fontSize: `${180 * unit}px`,
+            fontSize: `${160 * unit}px`,
             fontWeight: 700,
             textTransform: "uppercase",
-            WebkitTextStroke: `${3 * unit}px ${bone}`,
+            WebkitTextStroke: `${2 * unit}px ${cyan}`,
             color: "transparent",
-            letterSpacing: "0.05em",
+            letterSpacing: "0.06em",
             whiteSpace: "nowrap",
           }}
         >
@@ -67,7 +70,7 @@ export const PosterGraphics: React.FC<PosterGraphicsProps> = ({
         </div>
       )}
 
-      {/* Thin Framing Bars Above and Below the Block */}
+      {/* 2. Cyber HUD Laser Framing Lines Above and Below */}
       <div
         style={{
           position: "absolute",
@@ -75,10 +78,11 @@ export const PosterGraphics: React.FC<PosterGraphicsProps> = ({
           top: `${bounds.y - 14 * unit}px`,
           width: `${bounds.width}px`,
           height: `${Math.max(1, 2 * unit)}px`,
-          backgroundColor: bone,
+          background: `linear-gradient(90deg, ${acid}, ${cyan})`,
           transformOrigin: "left center",
           transform: `scaleX(${lineEase})`,
-          opacity: 0.75,
+          boxShadow: `0 0 ${8 * unit}px ${cyan}`,
+          opacity: 0.85,
           zIndex: 1,
         }}
       />
@@ -89,23 +93,72 @@ export const PosterGraphics: React.FC<PosterGraphicsProps> = ({
           top: `${bounds.y + bounds.height + 14 * unit}px`,
           width: `${bounds.width}px`,
           height: `${Math.max(1, 2 * unit)}px`,
-          backgroundColor: bone,
+          background: `linear-gradient(90deg, ${cyan}, ${red})`,
           transformOrigin: "right center",
           transform: `scaleX(${lineEase})`,
-          opacity: 0.75,
+          boxShadow: `0 0 ${8 * unit}px ${cyan}`,
+          opacity: 0.85,
           zIndex: 1,
         }}
       />
 
-      {/* Small Plus and Arrow Glyphs */}
+      {/* 3. Tech HUD Metadata Badge */}
       <div
         style={{
           position: "absolute",
-          left: `${bounds.x - 30 * unit}px`,
-          top: `${bounds.y - 20 * unit}px`,
-          fontFamily: fontFamilyCss("Space Mono"),
-          fontSize: `${18 * unit}px`,
-          color: red,
+          left: `${bounds.x}px`,
+          top: `${bounds.y - 34 * unit}px`,
+          display: "flex",
+          alignItems: "center",
+          gap: `${8 * unit}px`,
+          fontFamily: monoFont,
+          fontSize: `${10 * unit}px`,
+          fontWeight: 700,
+          color: acid,
+          letterSpacing: "0.2em",
+          opacity: lineEase * 0.9,
+          zIndex: 2,
+        }}
+      >
+        <span style={{ color: red }}>[REC]</span>
+        <span>HUD // HIGH-IMPACT</span>
+      </div>
+
+      {/* 4. Left Flank Tech Frequency Ticks */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${bounds.x - 22 * unit}px`,
+          top: `${bounds.y}px`,
+          height: `${bounds.height}px`,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          opacity: lineEase * 0.7,
+          zIndex: 2,
+        }}
+      >
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={`flank-${i}`}
+            style={{
+              width: `${12 * unit}px`,
+              height: `${1.5 * unit}px`,
+              backgroundColor: i % 2 === 0 ? acid : cyan,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* 5. Right Corner Crosshair '+' */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${bounds.x + bounds.width + 12 * unit}px`,
+          top: `${bounds.y - 18 * unit}px`,
+          fontFamily: monoFont,
+          fontSize: `${16 * unit}px`,
+          color: cyan,
           fontWeight: 700,
           opacity: lineEase,
           zIndex: 2,
@@ -113,38 +166,6 @@ export const PosterGraphics: React.FC<PosterGraphicsProps> = ({
       >
         +
       </div>
-      <div
-        style={{
-          position: "absolute",
-          left: `${bounds.x + bounds.width + 16 * unit}px`,
-          top: `${bounds.y + bounds.height}px`,
-          fontFamily: fontFamilyCss("Space Mono"),
-          fontSize: `${18 * unit}px`,
-          color: bone,
-          fontWeight: 700,
-          opacity: lineEase,
-          zIndex: 2,
-        }}
-      >
-        →
-      </div>
-
-      {/* Masking Tape Strip Across Corner of Hero Block */}
-      {heroWord && (
-        <div
-          style={{
-            position: "absolute",
-            left: `${heroWord.x - 12 * unit}px`,
-            top: `${heroWord.y - 10 * unit}px`,
-            width: `${42 * unit}px`,
-            height: `${14 * unit}px`,
-            backgroundColor: "rgba(242, 240, 235, 0.4)",
-            transform: "rotate(-18deg)",
-            boxShadow: "0 1px 0 rgba(0,0,0,0.4)",
-            zIndex: 12,
-          }}
-        />
-      )}
     </div>
   );
 };

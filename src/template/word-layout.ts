@@ -159,12 +159,12 @@ export function computeChunkLayout(
         normalCount++;
       }
 
-      // Fixed seeded resting rotation
+      // Subtle organic resting rotation
       const rotSeed = `chunk-${chunk.start}-word-${globalWordIndex}-${word.text}`;
       const rotation = role === "hero"
-        ? seededFloat(rotSeed, -5.5, 5.5)
-        : seededFloat(rotSeed, -3.5, 3.5);
-      const stickerRotation = rotation * -0.65;
+        ? seededFloat(rotSeed, -1.5, 1.5)
+        : seededFloat(rotSeed, -0.8, 0.8);
+      const stickerRotation = 0;
 
       const effect = word.effect ?? (role === "hero" ? "marker-highlight" : role === "accent" ? "wobble" : "none");
 

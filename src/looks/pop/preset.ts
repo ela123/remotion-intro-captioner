@@ -1,14 +1,15 @@
 import type { FontFamily, WordRole } from "../../types";
 
 export const POP_PALETTE = {
-  ink: "#1B1B2F",
-  cream: "#FFF8E7",
-  pink: "#FF3D8B",
-  yellow: "#FFD93D",
-  sky: "#4CC9F0",
-  mint: "#3DDC97",
-  violet: "#7B5CFF",
-  cycle: ["#FF3D8B", "#FFD93D", "#4CC9F0", "#3DDC97", "#7B5CFF"] as const,
+  ink: "#080A12",
+  cream: "#FFFFFF",
+  pink: "#FF2A6D",
+  yellow: "#FACC15",
+  sky: "#00F0FF",
+  mint: "#22C55E",
+  violet: "#8B5CF6",
+  cyan: "#00F0FF",
+  cycle: ["#00F0FF", "#22C55E", "#FACC15", "#FF2A6D", "#8B5CF6"] as const,
 };
 
 export const POP_ROLES: Record<
@@ -24,48 +25,48 @@ export const POP_ROLES: Record<
   }
 > = {
   hero: {
-    family: "Lilita One",
-    weight: 400,
-    scale: 2.0,
+    family: "DM Sans",
+    weight: 900,
+    scale: 1.85,
     uppercase: true,
-    trackingEm: 0.02,
+    trackingEm: -0.01,
   },
   accent: {
-    family: "Fredoka",
+    family: "DM Sans",
     weight: 700,
-    scale: 1.35,
+    scale: 1.25,
     uppercase: false,
-    trackingEm: 0.01,
+    trackingEm: 0,
   },
   normal: {
-    family: "Fredoka",
+    family: "DM Sans",
     weight: 600,
     scale: 1.0,
     uppercase: false,
     trackingEm: 0,
   },
   connector: {
-    family: "Fredoka",
+    family: "DM Sans",
     weight: 500,
-    scale: 0.6,
-    uppercase: false,
-    trackingEm: 0.05,
-    opacity: 0.9,
+    scale: 0.65,
+    uppercase: true,
+    trackingEm: 0.08,
+    opacity: 0.8,
   },
 };
 
 export const POP_TOKENS = {
   name: "pop" as const,
-  baseFontSizeU: 78,
+  baseFontSizeU: 76,
   palette: POP_PALETTE,
   roles: POP_ROLES,
   // Stroke & shadow rules
-  strokeWidthEm: 0.18,
-  dropShadow: "0.06em 0.08em 0 #1B1B2F",
+  strokeWidthEm: 0,
+  dropShadow: "0 4px 20px rgba(0, 0, 0, 0.85)",
   // Text fill contrast rule
   textColorForBacking: (bgColor: string): string => {
     const c = bgColor.toUpperCase();
-    if (c === POP_PALETTE.yellow || c === POP_PALETTE.mint || c === POP_PALETTE.sky) {
+    if (c === POP_PALETTE.yellow || c === POP_PALETTE.mint || c === POP_PALETTE.sky || c === "#00F0FF" || c === "#22C55E" || c === "#FACC15") {
       return POP_PALETTE.ink;
     }
     return POP_PALETTE.cream;

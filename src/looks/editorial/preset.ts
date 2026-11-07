@@ -1,10 +1,12 @@
 import type { FontFamily, WordRole } from "../../types";
 
 export const EDITORIAL_PALETTE = {
-  paper: "#F4EFE6",
-  ink: "#111111",
-  vermilion: "#E4572E",
-  gold: "#C9A227",
+  paper: "#F8FAFC",
+  ink: "#0A0D14",
+  vermilion: "#FF453A",
+  gold: "#F3CE72",
+  amber: "#E5A93C",
+  slate: "#94A3B8",
 };
 
 export const EDITORIAL_ROLES: Record<
@@ -21,43 +23,43 @@ export const EDITORIAL_ROLES: Record<
 > = {
   hero: {
     family: "Fraunces",
-    weight: 700,
-    scale: 2.1,
+    weight: 800,
+    scale: 1.95,
     uppercase: false,
     trackingEm: -0.01,
     fontStyle: "italic",
   },
   accent: {
-    family: "Fraunces",
-    weight: 600,
-    scale: 1.25,
+    family: "DM Sans",
+    weight: 700,
+    scale: 1.22,
     uppercase: false,
     trackingEm: 0,
     fontStyle: "normal",
   },
   normal: {
-    family: "Fraunces",
-    weight: 400,
+    family: "DM Sans",
+    weight: 500,
     scale: 1.0,
     uppercase: false,
     trackingEm: 0.01,
     fontStyle: "normal",
   },
   connector: {
-    family: "DM Sans",
-    weight: 500,
-    scale: 0.55,
+    family: "Space Mono",
+    weight: 700,
+    scale: 0.52,
     uppercase: true,
     trackingEm: 0.12,
-    opacity: 0.85,
+    opacity: 0.8,
   },
 };
 
 export const EDITORIAL_TOKENS = {
   name: "editorial" as const,
-  baseFontSizeU: 64,
+  baseFontSizeU: 68,
   palette: EDITORIAL_PALETTE,
   roles: EDITORIAL_ROLES,
-  shadowPreview: "0 2px 0 rgba(0, 0, 0, 0.6)",
-  shadowFinal: "0 2px 0 rgba(0, 0, 0, 0.75)",
+  shadowPreview: "0 4px 16px rgba(0, 0, 0, 0.6)",
+  shadowFinal: "0 6px 24px rgba(0, 0, 0, 0.75)",
 };
